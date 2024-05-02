@@ -1,4 +1,4 @@
-import { Asset, Contract, Keypair, Operation, nativeToScVal } from 'stellar-sdk';
+import { Asset, Contract, Keypair, Operation, nativeToScVal } from '@stellar/stellar-sdk';
 import { AddressBook } from '../utils/address_book.js';
 import { invokeAndUnwrap, invokeClassicOp } from '../utils/tx.js';
 import { deployStellarAsset } from '../utils/contract.js';

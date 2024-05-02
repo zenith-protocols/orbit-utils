@@ -6,7 +6,7 @@ import {
   PoolInitMeta,
   TxOptions,
 } from '@blend-capital/blend-sdk';
-import { Asset } from 'stellar-sdk';
+import { Asset } from '@stellar/stellar-sdk';
 import { CometClient } from '../external/comet.js';
 import { tryDeployStellarAsset } from '../external/token.js';
 import { AddressBook } from '../utils/address_book.js';

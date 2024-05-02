@@ -1,7 +1,7 @@
 import { config } from '../utils/env_config.js';
 import { AddressBook } from '../utils/address_book.js';
 import { OracleClient } from '../external/oracle.js';
-import { Address } from 'stellar-sdk';
+import { Address } from '@stellar/stellar-sdk';
 
 async function set_oracle_prices(addressBook: AddressBook) {
   // Initialize Contracts

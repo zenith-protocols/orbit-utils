@@ -10,7 +10,7 @@ import {
   TxOptions,
 } from '@blend-capital/blend-sdk';
 import { randomBytes } from 'crypto';
-import { Address, Asset, StrKey, hash, xdr } from 'stellar-sdk';
+import { Address, Asset, StrKey, hash, xdr } from '@stellar/stellar-sdk';
 import { CometClient } from '../external/comet.js';
 import { OracleClient } from '../external/oracle.js';
 import { TokenClient } from '../external/token.js';

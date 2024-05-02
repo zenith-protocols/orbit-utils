@@ -8,7 +8,7 @@ import {
   TxOptions,
 } from '@blend-capital/blend-sdk';
 import { randomBytes } from 'crypto';
-import { Operation, StrKey, hash, xdr } from 'stellar-sdk';
+import { Operation, StrKey, hash, xdr } from '@stellar/stellar-sdk';
 import { CometClient } from '../external/comet.js';
 import { AddressBook } from '../utils/address_book.js';
 import { config } from '../utils/env_config.js';

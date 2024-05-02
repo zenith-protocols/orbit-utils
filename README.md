@@ -1,15 +1,15 @@
-# blend-utils
+# Orbit-utils
 
-Deployment and utility scripts for interacting with the Blend Protocol and setting up mock environments.
+Deployment and utility scripts for interacting with the Orbit Protocol and setting up mock environments.
 
 ## Requirements
 
-- Clone the [blend-contracts](https://github.com/blend-capital/blend-contracts) and build the contracts. This needs to be a sibling, ie:
+- Clone the [Orbit-contracts](https://github.com/orbit-cdp/orbit-contracts) and build the contracts. This needs to be a sibling, ie:
 
 ```
 parent-folder/
-    blend-utils/
-    blend-contracts/
+    orbit-utils/
+    orbit-contracts/
 ```
 
 ## Setup
@@ -101,4 +101,19 @@ After setting the constants, the user can run the `deploy-pool` script to deploy
 
 ```bash
 node ./lib/user-scripts/deploy-pool.js network_name
+```
+
+## Docker
+
+To setup a local network instance run
+
+```
+docker build . \
+ --tag soroban-protocol:20 \
+ --force-rm \
+ --rm
+```
+
+```
+sh quickstart.sh local
 ```

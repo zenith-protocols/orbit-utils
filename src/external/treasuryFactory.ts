@@ -1,4 +1,4 @@
-import { Contract, Keypair, Address, ContractSpec } from 'stellar-sdk';
+import { Contract, Keypair, Address, ContractSpec } from '@stellar/stellar-sdk';
 
 import { invokeAndUnwrap } from '../utils/tx.js';
 

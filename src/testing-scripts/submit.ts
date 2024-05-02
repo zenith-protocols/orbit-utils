@@ -4,7 +4,7 @@ import { config } from '../utils/env_config.js';
 import { logInvocation, signWithKeypair } from '../utils/tx.js';
 import { airdropAccount } from '../utils/contract.js';
 import { TokenClient } from '../external/token.js';
-import { Asset } from 'stellar-sdk';
+import { Asset } from '@stellar/stellar-sdk';
 
 async function submit(addressBook: AddressBook) {
   const whale = config.getUser('OLDWHALE');

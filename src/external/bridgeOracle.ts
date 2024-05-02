@@ -1,4 +1,4 @@
-import { Contract, Keypair, Address, ContractSpec, nativeToScVal } from 'stellar-sdk';
+import { Contract, Keypair, Address, ContractSpec, nativeToScVal } from '@stellar/stellar-sdk';
 import { i128, u64 } from '@blend-capital/blend-sdk';
 import { invokeAndUnwrap } from '../utils/tx.js';
 

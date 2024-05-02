@@ -6,7 +6,7 @@ import {
   SorobanRpc,
   xdr,
   Operation,
-} from 'stellar-sdk';
+} from '@stellar/stellar-sdk';
 import { config } from './env_config.js';
 import { ContractResult, Resources } from '@blend-capital/blend-sdk';
 
