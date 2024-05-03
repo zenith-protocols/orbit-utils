@@ -1,98 +1,43 @@
-import { Address, Contract, Keypair, nativeToScVal, xdr } from '@stellar/stellar-sdk';
-import { invokeAndUnwrap } from '../utils/tx.js';
+import { Address, Contract, nativeToScVal, xdr } from '@stellar/stellar-sdk';
 
-export class CometClient {
-  comet: Contract;
-
-  constructor(address: string) {
-    this.comet = new Contract(address);
-  }
-
-  public async init(admin: string, source: Keypair) {
+export class CometFactoryContract extends Contract {
+  public init(comet_hash: Buffer): string {
     const invokeArgs = {
       method: 'init',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(
-          'CB3OJTILQJQPLJCTRJZLSWID554Y5ICVI2GEJ6ZUWAWOGBD6CF2I6SQZ'
-        ), // this is a random address as the factory is not used
-        ((i) => Address.fromString(i).toScVal())(admin),
-      ],
+      args: [((i) => xdr.ScVal.scvBytes(i))(comet_hash)],
     };
-    const operation = this.comet.call(invokeArgs.method, ...invokeArgs.args);
-    await invokeAndUnwrap(operation, source, () => undefined);
+    return this.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
-  public async setSwapFee(fee: bigint, source: Keypair) {
-    const invokeArgs = {
-      method: 'set_swap_fee',
-      args: [
-        ((i) => nativeToScVal(i, { type: 'i128' }))(fee),
-        ((i) => Address.fromString(i).toScVal())(source.publicKey()),
-      ],
-    };
-    const operation = this.comet.call(invokeArgs.method, ...invokeArgs.args);
-    await invokeAndUnwrap(operation, source, () => undefined);
-  }
-
-  public async setPublicSwap(value: boolean, source: Keypair) {
-    const invokeArgs = {
-      method: 'set_public_swap',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(source.publicKey()),
-        ((i) => xdr.ScVal.scvBool(i))(value),
-      ],
-    };
-    const operation = this.comet.call(invokeArgs.method, ...invokeArgs.args);
-    await invokeAndUnwrap(operation, source, () => undefined);
-  }
-
-  public async finalize(source: Keypair) {
-    const invokeArgs = {
-      method: 'finalize',
-      args: [],
-    };
-    const operation = this.comet.call(invokeArgs.method, ...invokeArgs.args);
-    await invokeAndUnwrap(operation, source, () => undefined);
-  }
-
-  public async bundleBind(
-    token: Array<string>,
-    balance: Array<bigint>,
-    denorm: Array<bigint>,
-    source: Keypair
-  ) {
-    const invokeArgs = {
-      method: 'bundle_bind',
-      args: [
-        ((i) => xdr.ScVal.scvVec(i.map((i) => Address.fromString(i).toScVal())))(token),
-        ((i) => xdr.ScVal.scvVec(i.map((i) => nativeToScVal(i, { type: 'i128' }))))(balance),
-        ((i) => xdr.ScVal.scvVec(i.map((i) => nativeToScVal(i, { type: 'i128' }))))(denorm),
-      ],
-    };
-    const operation = this.comet.call(invokeArgs.method, ...invokeArgs.args);
-    await invokeAndUnwrap(operation, source, () => undefined);
-  }
-
-  public async bind(token: string, balance: bigint, denorm: bigint, source: Keypair) {
-    const invokeArgs = {
-      method: 'bind',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(token),
-        ((i) => nativeToScVal(i, { type: 'i128' }))(balance),
-        ((i) => nativeToScVal(i, { type: 'i128' }))(denorm),
-        ((i) => Address.fromString(i.publicKey()).toScVal())(source),
-      ],
-    };
-    const operation = this.comet.call(invokeArgs.method, ...invokeArgs.args);
-    await invokeAndUnwrap(operation, source, () => undefined);
-  }
-
-  public async joinPool(
-    pool_amount_out: bigint,
-    max_amounts_in: Array<bigint>,
+  public newCometPool(
+    salt: Buffer,
     user: string,
-    source: Keypair
-  ) {
+    tokens: Array<string>,
+    weights: Array<bigint>,
+    balances: Array<bigint>,
+    swap_fee: bigint
+  ): string {
+    const invokeArgs = {
+      method: 'new_c_pool',
+      args: [
+        ((i) => xdr.ScVal.scvBytes(i))(salt),
+        ((i) => Address.fromString(i).toScVal())(user),
+        ((i) => xdr.ScVal.scvVec(i.map((i) => Address.fromString(i).toScVal())))(tokens),
+        ((i) => xdr.ScVal.scvVec(i.map((i) => nativeToScVal(i, { type: 'i128' }))))(weights),
+        ((i) => xdr.ScVal.scvVec(i.map((i) => nativeToScVal(i, { type: 'i128' }))))(balances),
+        ((i) => nativeToScVal(i, { type: 'i128' }))(swap_fee),
+      ],
+    };
+    return this.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
+  }
+}
+
+export class CometContract extends Contract {
+  constructor(address: string) {
+    super(address);
+  }
+
+  public joinPool(pool_amount_out: bigint, max_amounts_in: Array<bigint>, user: string) {
     const invokeArgs = {
       method: 'join_pool',
       args: [
@@ -101,16 +46,14 @@ export class CometClient {
         ((i) => Address.fromString(i).toScVal())(user),
       ],
     };
-    const operation = this.comet.call(invokeArgs.method, ...invokeArgs.args);
-    await invokeAndUnwrap(operation, source, () => undefined);
+    return this.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
-  public async deposit_single_max_in(
+  public deposit_single_max_in(
     token_in: string,
     pool_amount_out: bigint,
     max_amount_in: bigint,
-    user: string,
-    source: Keypair
+    user: string
   ) {
     const invokeArgs = {
       method: 'dep_lp_tokn_amt_out_get_tokn_in',
@@ -121,7 +64,14 @@ export class CometClient {
         ((i) => Address.fromString(i).toScVal())(user),
       ],
     };
-    const operation = this.comet.call(invokeArgs.method, ...invokeArgs.args);
-    await invokeAndUnwrap(operation, source, () => undefined);
+    return this.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
+  }
+
+  public setController(manager: string) {
+    const invokeArgs = {
+      method: 'set_controller',
+      args: [((i) => Address.fromString(i).toScVal())(manager)],
+    };
+    return this.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 }
