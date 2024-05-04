@@ -1,23 +1,52 @@
 import {
-  BackstopClient,
+  BackstopContract,
   Network,
-  PoolClient,
-  PoolFactoryClient,
+  PoolContract,
+  PoolFactoryContract,
   ReserveConfig,
   ReserveEmissionMetadata,
-  TxOptions,
+  parseError,
 } from '@blend-capital/blend-sdk';
-import { randomBytes } from 'crypto';
-import { Address, Asset, Operation, StrKey, hash, xdr } from '@stellar/stellar-sdk';
-import { CometClient } from '../external/comet.js';
-import { AddressBook } from '../utils/address_book.js';
-import { config } from '../utils/env_config.js';
-import { invokeClassicOp, logInvocation, signWithKeypair } from '../utils/tx.js';
-import { airdropAccount, bumpContractCode, bumpContractInstance, deployContract, deployStellarAsset } from '../utils/contract.js';
-import { TreasuryFactoryClient } from '../external/treasuryFactory.js';
-import { TokenClient, tryDeployStellarAsset } from '../external/token.js';
-import { BridgeOracleClient } from '../external/bridgeOracle.js';
 
+import { randomBytes } from 'crypto';
+import {
+  Address,
+  Asset,
+  Operation,
+  StrKey,
+  hash,
+  xdr,
+  nativeToScVal,
+  TransactionBuilder,
+  Transaction,
+  SorobanRpc,
+} from '@stellar/stellar-sdk';
+import { CometContract } from '../external/comet.js';
+import { addressBook } from '../utils/address_book.js';
+import { config } from '../utils/env_config.js';
+//import { invokeClassicOp, logInvocation, signWithKeypair, TxParams } from '../utils/tx.js';
+import {
+  invokeClassicOp,
+  signWithKeypair,
+  TxParams,
+  invokeSorobanOperation,
+  sendTransaction,
+} from '../utils/tx.js';
+import { logInvocation } from '../utils/tx.old.js';
+
+import {
+  airdropAccount,
+  bumpContractCode,
+  bumpContractInstance,
+  deployContract,
+  // deployStellarAsset,
+} from '../utils/contract.js';
+import { tryDeployStellarAsset } from '../utils/stellar-asset.js';
+
+import { TreasuryFactoryContract } from '../external/treasuryFactory.js';
+import { TokenContract } from '../external/token.js';
+import { BridgeOracleContract } from '../external/bridgeOracle.js';
+import { setupReserve } from '../blend-pool/reserve-setup.js';
 /// Deployment Constants
 const deposit_asset = BigInt(2); // 0=BLND, 1=USDC, 2=Both
 const blnd_max = BigInt(9_000_000e7);
@@ -35,6 +64,7 @@ const reserve_configs: ReserveConfig[] = [
     l_factor: 980_0000,
     util: 900_0000, //must be under 950_0000
     max_util: 980_0000, //must be greater than util
+    r_base: 50000, // (0_0050000)
     r_one: 50_0000,
     r_two: 100_0000,
     r_three: 1_000_0000,
@@ -47,6 +77,7 @@ const reserve_configs: ReserveConfig[] = [
     l_factor: 980_0000,
     util: 900_0000,
     max_util: 980_0000,
+    r_base: 50000, // (0_0050000)
     r_one: 50_0000,
     r_two: 100_0000,
     r_three: 1_000_0000,
@@ -70,25 +101,48 @@ const addToRewardZone = true;
 const poolToRemove = 'Stellar';
 const revokeAdmin = false;
 
-async function deploy(addressBook: AddressBook) {
-  const signWithAdmin = (txXdr: string) =>
-    signWithKeypair(txXdr, rpc_network.passphrase, config.admin);
+const txParams: TxParams = {
+  account: await config.rpc.getAccount(config.admin.publicKey()),
+  txBuilderOptions: {
+    fee: '10000',
+    timebounds: {
+      minTime: 0,
+      maxTime: 0,
+    },
+    networkPassphrase: config.passphrase,
+  },
+  signerFunction: async (txXdr: string) => {
+    return signWithKeypair(txXdr, config.passphrase, config.admin);
+  },
+};
 
+async function deploy() {
   // Initialize Contracts
-  const poolFactory = new PoolFactoryClient(addressBook.getContractId('poolFactory'));
-  const backstop = new BackstopClient(addressBook.getContractId('backstop'));
-  const comet = new CometClient(addressBook.getContractId('comet'));
-  const treasuryFactory = new TreasuryFactoryClient(addressBook.getContractId('treasuryFactory'));
+  const poolFactory = new PoolFactoryContract(addressBook.getContractId('poolFactory'));
+  const backstop = new BackstopContract(addressBook.getContractId('backstop'));
+  //const comet = new CometClient(addressBook.getContractId('comet'));
+
+  const treasuryFactory = new TreasuryFactoryContract(addressBook.getContractId('treasuryFactory'));
+  const bridgeOracle = new BridgeOracleContract(addressBook.getContractId('bridgeOracle'));
 
   //Deploy bridge oracle and token
-  await tryDeployStellarAsset(addressBook, config.admin, new Asset('oUSD', config.admin.publicKey()));
-  await bumpContractInstance('oUSD', addressBook, config.admin);
 
-  await deployContract('bridgeOracle', 'bridgeOracle', addressBook, config.admin);
-  await bumpContractInstance('bridgeOracle', addressBook, config.admin);
-  const bridgeOracle = new BridgeOracleClient(addressBook.getContractId('bridgeOracle'));
-  await bridgeOracle.initialize(addressBook.getContractId('oUSD'), addressBook.getContractId('USDC'), addressBook.getContractId('oracle'), config.admin);
+  const oUSD = new Asset('oUSD', config.admin.publicKey());
 
+  await tryDeployStellarAsset(oUSD, txParams);
+
+  await bumpContractInstance('oUSD', txParams);
+  await bumpContractInstance('bridgeOracle', txParams);
+  const bridgeOracleId = await deployContract('bridgeOracle', 'bridgeOracle', txParams);
+
+  //await deployContract('bridgeOracle', 'bridgeOracle', addressBook, config.admin);
+  // await bumpContractInstance('bridgeOracle', addressBook, config.admin);
+
+  await bridgeOracle.initialize(
+    new Address(addressBook.getContractId('oUSD')),
+    new Address(addressBook.getContractId('USDC')),
+    new Address(addressBook.getContractId('oracle'))
+  );
   // mint lp with blnd
   // if (mint_amount > 0) {
   //   if (deposit_asset == BigInt(0)) {
@@ -117,27 +171,32 @@ async function deploy(addressBook: AddressBook) {
   //     );
   //   }
   // }
-  // Update token value
-  await logInvocation(
-    backstop.updateTokenValue(config.admin.publicKey(), signWithAdmin, rpc_network, tx_options)
-  );
 
+  // Update token value
+  await invokeSorobanOperation(
+    backstop.updateTokenValue(),
+    BackstopContract.parsers.updateTknVal,
+    txParams
+  );
   //********** Stellar Pool (XLM, USDC) **********//
 
   console.log('Deploy Pool');
   const poolSalt = randomBytes(32);
 
-  await logInvocation(
-    poolFactory.deploy(config.admin.publicKey(), signWithAdmin, rpc_network, tx_options, {
-      admin: config.admin.publicKey(),
-      name: pool_name,
-      salt: poolSalt,
-      oracle: addressBook.getContractId('bridgeOracle'),
-      backstop_take_rate: backstop_take_rate,
-      max_positions: max_positions,
-    })
+  const deployPoolArgs = {
+    admin: config.admin.publicKey(),
+    name: pool_name,
+    salt: poolSalt,
+    oracle: addressBook.getContractId('bridgeOracle'),
+    backstop_take_rate,
+    max_positions: max_positions,
+  };
+  const poolAddress = await invokeSorobanOperation(
+    poolFactory.deploy(deployPoolArgs),
+    PoolFactoryContract.parsers.deploy,
+    txParams
   );
-
+  /*
   const networkId = hash(Buffer.from(config.passphrase));
   const preimage = xdr.HashIdPreimage.envelopeTypeContractId(
     new xdr.HashIdPreimageContractId({
@@ -150,122 +209,154 @@ async function deploy(addressBook: AddressBook) {
       ),
     })
   );
-  const contractId = StrKey.encodeContract(hash(preimage.toXDR()));
-  addressBook.setContractId(pool_name, contractId);
-  addressBook.writeToFile();
+  */
+  
+  //const contractId = StrKey.encodeContract(hash(preimage.toXDR()));
+  if (poolAddress) {
+    addressBook.setContractId(pool_name, poolAddress);
+    addressBook.writeToFile();
+    await bumpContractInstance(deployPoolArgs.name, txParams);
+  } else {
+    console.error('the poolAddress did not get generated');
+  }
+  const newPool = new PoolContract(addressBook.getContractId(pool_name));
+  console.log(`Successfully deployed ${deployPoolArgs.name} pool.\n`);
 
   console.log('Deploy Treasury');
   const treasurySalt = randomBytes(32);
 
-  await treasuryFactory.deploy(treasurySalt, addressBook.getContractId("oUSD"), addressBook.getContractId(pool_name), config.admin);
-
+  const treasuryId = await invokeSorobanOperation(
+    treasuryFactory.deploy(
+      treasurySalt,
+      new Address(addressBook.getContractId('oUSD')),
+      new Address(poolAddress as string)
+    ),
+    TreasuryFactoryContract.parsers.deploy,
+    txParams
+  );
+  /*
   const networkId2 = hash(Buffer.from(config.passphrase));
   const preimage2 = xdr.HashIdPreimage.envelopeTypeContractId(
     new xdr.HashIdPreimageContractId({
       networkId: networkId2,
       contractIdPreimage: xdr.ContractIdPreimage.contractIdPreimageFromAddress(
         new xdr.ContractIdPreimageFromAddress({
-          address: xdr.ScAddress.scAddressTypeContract(StrKey.decodeContract(treasuryFactory.address)),
+          address: xdr.ScAddress.scAddressTypeContract(
+            StrKey.decodeContract(treasuryFactory.address)
+          ),
           salt: treasurySalt,
         })
       ),
     })
   );
   const contractId2 = StrKey.encodeContract(hash(preimage2.toXDR()));
-  addressBook.setContractId("treasury", contractId2);
+  */
+
+  addressBook.setContractId('treasury', treasuryId);
   addressBook.writeToFile();
 
-  const tokenClient = new TokenClient(addressBook.getContractId('oUSD'));
-  await tokenClient.set_admin(contractId2, config.admin);
+  const tokenContract = new TokenContract(addressBook.getContractId('oUSD'));
+  // set the admin on the token to the treasury
+  await invokeSorobanOperation(
+    await tokenContract.set_admin(treasuryId),
+    () => undefined,
+    txParams
+  );
 
   console.log('Setup pool reserves and emissions');
-  const newPool = new PoolClient(addressBook.getContractId(pool_name));
 
   for (let i = 0; i < reserves.length; i++) {
     const reserve_name = reserves[i];
     const reserve_config = reserve_configs[i];
-    await logInvocation(
-      newPool.queueSetReserve(config.admin.publicKey(), signWithAdmin, rpc_network, tx_options, {
+    await setupReserve(
+      newPool.contractId(),
+      {
         asset: addressBook.getContractId(reserve_name),
         metadata: reserve_config,
-      })
-    );
-    await logInvocation(
-      newPool.setReserve(
-        config.admin.publicKey(),
-        signWithAdmin,
-        rpc_network,
-        tx_options,
-        addressBook.getContractId(reserve_name)
-      )
+      },
+      txParams
     );
   }
 
-  await logInvocation(
-    newPool.setEmissionsConfig(
-      config.admin.publicKey(),
-      signWithAdmin,
-      rpc_network,
-      tx_options,
-      poolEmissionMetadata
-    )
+  await invokeSorobanOperation(
+    newPool.setEmissionsConfig(poolEmissionMetadata),
+    PoolContract.parsers.setEmissionsConfig,
+    txParams
   );
   if (mint_amount > 0) {
-    console.log('Setup backstop for Stellar pool');
-    await logInvocation(
-      backstop.deposit(config.admin.publicKey(), signWithAdmin, rpc_network, tx_options, {
+    console.log('Setup backstop for Stellar pool\n');
+    await invokeSorobanOperation(
+      backstop.deposit({
         from: config.admin.publicKey(),
-        pool_address: newPool.address,
+        pool_address: newPool.contractId(),
         amount: mint_amount,
-      })
+      }),
+      BackstopContract.parsers.deposit,
+      txParams
     );
   }
 
   console.log('Setting Starting Status');
-  await logInvocation(
-    newPool.setStatus(
-      config.admin.publicKey(),
-      signWithAdmin,
-      rpc_network,
-      tx_options,
-      startingStatus
-    )
+  await invokeSorobanOperation(
+    newPool.setStatus(startingStatus),
+    PoolContract.parsers.setStatus,
+    txParams
   );
 
   if (addToRewardZone) {
-    await logInvocation(
-      backstop.addReward(config.admin.publicKey(), signWithAdmin, rpc_network, tx_options, {
-        to_add: newPool.address,
+    await invokeSorobanOperation(
+      backstop.addReward({
+        to_add: newPool.contractId(),
         to_remove: addressBook.getContractId(poolToRemove),
-      })
+      }),
+      BackstopContract.parsers.addReward,
+      txParams
     );
   }
 
   if (revokeAdmin) {
-    console.log('Revoking Admin');
+    console.log('Revoking Admin\n');
+    const newAdmin = config.getUser('PROPOSER');
     if (network != 'mainnet') {
-      airdropAccount(config.getUser('NEWADMIN'));
+      await airdropAccount(newAdmin);
     }
     //switch ownership to new admin
-    await logInvocation(
-      newPool.setAdmin(
-        config.admin.publicKey(),
-        signWithAdmin,
-        rpc_network,
-        tx_options,
-        config.getUser('NEWADMIN').publicKey()
-      )
+    const newAdminOp = newPool.setAdmin(newAdmin.publicKey());
+
+    const txBuilder = new TransactionBuilder(txParams.account, txParams.txBuilderOptions)
+      .setTimeout(0)
+      .addOperation(xdr.Operation.fromXDR(newAdminOp, 'base64'));
+    const transaction = txBuilder.build();
+    const newAdminSignedTx = new Transaction(
+      await signWithKeypair(transaction.toXDR(), config.passphrase, newAdmin),
+      config.passphrase
     );
+    const simResponse = await config.rpc.simulateTransaction(newAdminSignedTx);
+    if (SorobanRpc.Api.isSimulationError(simResponse)) {
+      const error = parseError(simResponse);
+      throw error;
+    }
+    const assembledTx = SorobanRpc.assembleTransaction(newAdminSignedTx, simResponse).build();
+    const signedTx = new Transaction(
+      await txParams.signerFunction(assembledTx.toXDR()),
+      config.passphrase
+    );
+    await sendTransaction(signedTx, () => undefined);
+
     // revoke new admin signing power
     const revokeOp = Operation.setOptions({
       masterWeight: 0,
-      source: config.admin.publicKey(),
     });
-    await invokeClassicOp(revokeOp, config.admin);
+    txParams.account = await config.rpc.getAccount(newAdmin.publicKey());
+    txParams.signerFunction = async (txXDR: string) => {
+      return signWithKeypair(txXDR, config.passphrase, newAdmin);
+    };
+    await invokeClassicOp(revokeOp.toXDR('base64'), txParams);
   }
 }
 
 const network = process.argv[2];
+/*
 const addressBook = AddressBook.loadFromFile(network);
 const rpc_network: Network = {
   rpc: config.rpc.serverURL.toString(),
@@ -284,5 +375,5 @@ const tx_options: TxOptions = {
     },
     networkPassphrase: config.passphrase,
   },
-};
+  */
 await deploy(addressBook);

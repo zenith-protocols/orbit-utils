@@ -106,3 +106,10 @@ export class AddressBook {
     this.hashes.set(contractKey, wasmHash);
   }
 }
+
+const network = process.argv[2];
+if (network == undefined || network == '') {
+  throw new Error('Error: Network argument required');
+}
+
+export const addressBook = AddressBook.loadFromFile(network);
