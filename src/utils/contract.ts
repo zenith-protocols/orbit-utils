@@ -43,6 +43,7 @@ export async function installContract(wasmKey: string, txParams: TxParams): Prom
     func: xdr.HostFunction.hostFunctionTypeUploadContractWasm(contractWasm),
     auth: [],
   });
+  console.log(`Uploading contract WASM for ${wasmKey} from ${contractWasm}`);
   await invokeSorobanOperation(op.toXDR('base64'), () => undefined, txParams);
   addressBook.writeToFile();
   console.log(`Contract installed with hash: ${wasmHash.toString('hex')}`);
@@ -91,10 +92,16 @@ export async function deployContract(
     auth: [],
   });
   addressBook.writeToFile();
+  console.log(`Deploying contract ${contractKey} with ID ${contractId}`);
   await invokeSorobanOperation(deployOp.toXDR('base64'), () => undefined, txParams);
   return contractId;
 }
 
+/**
+ * Bumps the instance of a deployed contract, extending its ledger footprint TTL.
+ * @param {string} contractKey - Key identifying the contract.
+ * @param {TxParams} txParams - Transaction parameters.
+ */
 export async function bumpContractInstance(contractKey: string, txParams: TxParams) {
   const address = Address.fromString(addressBook.getContractId(contractKey));
   const contractInstanceXDR = xdr.LedgerKey.contractData(
@@ -119,6 +126,7 @@ export async function bumpContractInstance(contractKey: string, txParams: TxPara
     // @ts-ignore
     ext: new xdr.ExtensionPoint(0),
   });
+  console.log(`Bumping the contract instance for ${contractKey}`);
   await invokeSorobanOperation(
     Operation.extendFootprintTtl({ extendTo: 535670 }).toXDR('base64'),
     () => undefined,
@@ -127,6 +135,11 @@ export async function bumpContractInstance(contractKey: string, txParams: TxPara
   );
 }
 
+/**
+ * Bumps the code of a deployed contract by extending its ledger footprint TTL.
+ * @param {string} wasmKey - Key identifying the WASM hash used in the contract.
+ * @param {TxParams} txParams - Transaction parameters.
+ */
 export async function bumpContractCode(wasmKey: string, txParams: TxParams) {
   const wasmHash = Buffer.from(addressBook.getWasmHash(wasmKey), 'hex');
   const contractCodeXDR = xdr.LedgerKey.contractCode(
@@ -149,6 +162,7 @@ export async function bumpContractCode(wasmKey: string, txParams: TxParams) {
     // @ts-ignore
     ext: new xdr.ExtensionPoint(0),
   });
+  console.log(`Bumping the contract code for WASM hash associated with key: ${wasmKey}`);
   await invokeSorobanOperation(
     Operation.extendFootprintTtl({ extendTo: 535670 }).toXDR('base64'),
     () => undefined,
@@ -157,6 +171,12 @@ export async function bumpContractCode(wasmKey: string, txParams: TxParams) {
   );
 }
 
+/**
+ * Bumps the data of a deployed contract by extending its ledger footprint TTL.
+ * @param {string} contractKey - Key identifying the contract.
+ * @param {xdr.ScVal} dataKey - Specific data key within the contract to bump.
+ * @param {TxParams} txParams - Transaction parameters.
+ */
 export async function bumpContractData(
   contractKey: string,
   dataKey: xdr.ScVal,
@@ -185,6 +205,7 @@ export async function bumpContractData(
     // @ts-ignore
     ext: new xdr.ExtensionPoint(0),
   });
+  console.log(`Bumping the contract data for key: ${dataKey}`);
   await invokeSorobanOperation(
     Operation.extendFootprintTtl({ extendTo: 535670 }).toXDR('base64'),
     () => undefined,
@@ -193,6 +214,12 @@ export async function bumpContractData(
   );
 }
 
+/**
+ * Restores the data of a deployed contract to its state prior to being extended.
+ * @param {string} contractKey - Key identifying the contract.
+ * @param {xdr.ScVal} dataKey - Specific data key within the contract to restore.
+ * @param {TxParams} txParams - Transaction parameters.
+ */
 export async function restoreContractData(
   contractKey: string,
   dataKey: xdr.ScVal,
@@ -221,6 +248,7 @@ export async function restoreContractData(
     // @ts-ignore
     ext: new xdr.ExtensionPoint(0),
   });
+  console.log(`Restoring the contract data for key: ${dataKey}`);
   await invokeSorobanOperation(
     Operation.restoreFootprint({}).toXDR('base64'),
     () => undefined,
@@ -229,6 +257,10 @@ export async function restoreContractData(
   );
 }
 
+/**
+ * Requests an airdrop to fund a Stellar account using the network's friendbot.
+ * @param {Keypair} user - The Stellar Keypair object of the user to fund.
+ */
 export async function airdropAccount(user: Keypair) {
   try {
     console.log('Start funding');
