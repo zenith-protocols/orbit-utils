@@ -15,6 +15,7 @@ class EnvConfig {
   comet_wasm_rel_path: string;
   token_lockup_wasm_rel_path: string;
   blend_lockup_wasm_rel_path: string;
+  orbit_wasm_rel_path: string;
   admin: Keypair;
 
   constructor(
@@ -25,6 +26,7 @@ class EnvConfig {
     comet_wasm_rel_path: string,
     token_lockup_rel_path: string,
     blend_lockup_rel_path: string,
+    orbit_wasm_rel_path: string,
     admin: Keypair
   ) {
     this.rpc = rpc;
@@ -34,6 +36,7 @@ class EnvConfig {
     this.comet_wasm_rel_path = comet_wasm_rel_path;
     this.token_lockup_wasm_rel_path = token_lockup_rel_path;
     this.blend_lockup_wasm_rel_path = blend_lockup_rel_path;
+    this.orbit_wasm_rel_path = orbit_wasm_rel_path;
     this.admin = admin;
   }
 
@@ -49,6 +52,7 @@ class EnvConfig {
     const comet_wasm_rel_path = process.env.COMET_WASM_REL_PATH;
     const token_lockup_wasm_rel_path = process.env.TOKEN_LOCKUP_WASM_REL_PATH;
     const blend_lockup_wasm_rel_path = process.env.BLEND_LOCKUP_WASM_REL_PATH;
+    const orbit_wasm_rel_path = process.env.ORBIT_WASM_REL_PATH;
     const admin = process.env.ADMIN;
 
     if (
@@ -59,6 +63,7 @@ class EnvConfig {
       comet_wasm_rel_path == undefined ||
       token_lockup_wasm_rel_path == undefined ||
       blend_lockup_wasm_rel_path == undefined ||
+      orbit_wasm_rel_path == undefined ||
       admin == undefined
     ) {
       throw new Error('Error: .env file is missing required fields');
@@ -72,6 +77,7 @@ class EnvConfig {
       comet_wasm_rel_path,
       token_lockup_wasm_rel_path,
       blend_lockup_wasm_rel_path,
+      orbit_wasm_rel_path,
       Keypair.fromSecret(admin)
     );
   }

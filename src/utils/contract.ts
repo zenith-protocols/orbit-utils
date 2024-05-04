@@ -8,25 +8,31 @@ import { config } from './env_config.js';
 import { TxParams, invokeSorobanOperation } from './tx.js';
 
 // Relative paths from __dirname
-const CONTRACT_REL_PATH: object = {
+const CONTRACT_REL_PATH = {
   token: '../../src/external/token.wasm',
-  comet: '../../' + config.comet_wasm_rel_path + 'comet.wasm',
-  cometFactory: '../../' + config.comet_wasm_rel_path + 'comet_factory.wasm',
+  comet: `../../${config.comet_wasm_rel_path}comet.wasm`,
+  cometFactory: `../../${config.comet_wasm_rel_path}comet_factory.wasm`,
   oraclemock: '../../src/external/oracle.wasm',
-  emitter: '../../' + config.blend_wasm_rel_path + 'emitter.wasm',
-  poolFactory: '../../' + config.blend_wasm_rel_path + 'pool_factory.wasm',
-  backstop: '../../' + config.blend_wasm_rel_path + 'backstop.wasm',
-  lendingPool: '../../' + config.blend_wasm_rel_path + 'pool.wasm',
-  tokenLockup: '../../' + config.token_lockup_wasm_rel_path + 'token_lockup.wasm',
-  blendLockup: '../../' + config.blend_lockup_wasm_rel_path + 'blend_lockup.wasm',
-  treasury: '../../../orbit-contracts/wasm/treasury.wasm',
-  treasuryFactory: '../../../orbit-contracts/wasm/treasury_factory.wasm',
-  bridgeOracle: '../../../orbit-contracts/wasm/bridge_oracle.wasm',
+  emitter: `../../${config.blend_wasm_rel_path}emitter.wasm`,
+  poolFactory: `../../${config.blend_wasm_rel_path}pool_factory.wasm`,
+  backstop: `../../${config.blend_wasm_rel_path}backstop.wasm`,
+  lendingPool: `../../${config.blend_wasm_rel_path}pool.wasm`,
+  tokenLockup: `../../${config.token_lockup_wasm_rel_path}token_lockup.wasm`,
+  blendLockup: `../../${config.blend_lockup_wasm_rel_path}blend_lockup.wasm`,
+  treasury: `../../../${config.orbit_wasm_rel_path}treasury.wasm`,
+  treasuryFactory: `../../../${config.orbit_wasm_rel_path}treasury_factory.wasm`,
+  bridgeOracle: `../../../${config.orbit_wasm_rel_path}bridge_oracle.wasm`,
 };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Installs a contract by uploading its WASM to the blockchain.
+ * @param {string} wasmKey - Key to identify which contract's WASM to upload.
+ * @param {TxParams} txParams - Transaction parameters.
+ * @returns {Promise<Buffer>} The hash of the uploaded WASM.
+ */
 export async function installContract(wasmKey: string, txParams: TxParams): Promise<Buffer> {
   const contractWasm = readFileSync(
     path.join(__dirname, CONTRACT_REL_PATH[wasmKey as keyof object])
@@ -39,9 +45,17 @@ export async function installContract(wasmKey: string, txParams: TxParams): Prom
   });
   await invokeSorobanOperation(op.toXDR('base64'), () => undefined, txParams);
   addressBook.writeToFile();
+  console.log(`Contract installed with hash: ${wasmHash.toString('hex')}`);
   return wasmHash;
 }
 
+/**
+ * Deploys a contract instance on the blockchain.
+ * @param {string} contractKey - Key to store the deployed contract's ID.
+ * @param {string} wasmKey - Key to fetch the WASM hash used for deployment.
+ * @param {TxParams} txParams - Transaction parameters.
+ * @returns {Promise<string>} The contract ID of the deployed instance.
+ */
 export async function deployContract(
   contractKey: string,
   wasmKey: string,
