@@ -2,7 +2,7 @@ node_modules
 dist
 lib
 .DS_Store
-
+log
 src/scripts/temp.ts
 .soroban
 # configuration files

@@ -43,7 +43,7 @@ export async function installContract(wasmKey: string, txParams: TxParams): Prom
     func: xdr.HostFunction.hostFunctionTypeUploadContractWasm(contractWasm),
     auth: [],
   });
-  console.log(`Uploading contract WASM for ${wasmKey} from ${contractWasm}`);
+  console.log(`Uploading contract WASM for ${wasmKey}`);
   await invokeSorobanOperation(op.toXDR('base64'), () => undefined, txParams);
   addressBook.writeToFile();
   console.log(`Contract installed with hash: ${wasmHash.toString('hex')}`);
