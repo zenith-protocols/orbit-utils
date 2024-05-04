@@ -1,6 +1,5 @@
 import {
   BackstopContract,
-  Network,
   PoolContract,
   PoolFactoryContract,
   ReserveConfig,
@@ -13,18 +12,14 @@ import {
   Address,
   Asset,
   Operation,
-  StrKey,
-  hash,
   xdr,
-  nativeToScVal,
   TransactionBuilder,
   Transaction,
   SorobanRpc,
 } from '@stellar/stellar-sdk';
-import { CometContract } from '../external/comet.js';
+//import { CometContract } from '../external/comet.js';
 import { addressBook } from '../utils/address-book.js';
 import { config } from '../utils/env_config.js';
-//import { invokeClassicOp, logInvocation, signWithKeypair, TxParams } from '../utils/tx.js';
 import {
   invokeClassicOp,
   signWithKeypair,
@@ -33,13 +28,7 @@ import {
   sendTransaction,
 } from '../utils/tx.js';
 
-import {
-  airdropAccount,
-  bumpContractCode,
-  bumpContractInstance,
-  deployContract,
-  // deployStellarAsset,
-} from '../utils/contract.js';
+import { airdropAccount, bumpContractInstance, deployContract } from '../utils/contract.js';
 import { tryDeployStellarAsset } from '../utils/stellar-asset.js';
 
 import { TreasuryFactoryContract } from '../external/treasuryFactory.js';
@@ -47,9 +36,9 @@ import { TokenContract } from '../external/token.js';
 import { BridgeOracleContract } from '../external/bridgeOracle.js';
 import { setupReserve } from '../blend-pool/reserve-setup.js';
 /// Deployment Constants
-const deposit_asset = BigInt(2); // 0=BLND, 1=USDC, 2=Both
-const blnd_max = BigInt(9_000_000e7);
-const usdc_max = BigInt(100_000e7);
+//const deposit_asset = BigInt(2); // 0=BLND, 1=USDC, 2=Both
+//const blnd_max = BigInt(9_000_000e7);
+//const usdc_max = BigInt(100_000e7);
 const mint_amount = BigInt(50_000e7);
 const pool_name = 'OrbitUSD';
 const backstop_take_rate = 0.5e7;
@@ -133,9 +122,7 @@ async function deploy() {
   await bumpContractInstance('oUSD', txParams);
   await bumpContractInstance('bridgeOracle', txParams);
   const bridgeOracleId = await deployContract('bridgeOracle', 'bridgeOracle', txParams);
-
-  //await deployContract('bridgeOracle', 'bridgeOracle', addressBook, config.admin);
-  // await bumpContractInstance('bridgeOracle', addressBook, config.admin);
+  console.log('bridge oracle deployed: ' + bridgeOracleId);
 
   await bridgeOracle.initialize(
     new Address(addressBook.getContractId('oUSD')),
@@ -195,22 +182,7 @@ async function deploy() {
     PoolFactoryContract.parsers.deploy,
     txParams
   );
-  /*
-  const networkId = hash(Buffer.from(config.passphrase));
-  const preimage = xdr.HashIdPreimage.envelopeTypeContractId(
-    new xdr.HashIdPreimageContractId({
-      networkId: networkId,
-      contractIdPreimage: xdr.ContractIdPreimage.contractIdPreimageFromAddress(
-        new xdr.ContractIdPreimageFromAddress({
-          address: xdr.ScAddress.scAddressTypeContract(StrKey.decodeContract(poolFactory.address)),
-          salt: poolSalt,
-        })
-      ),
-    })
-  );
-  */
 
-  //const contractId = StrKey.encodeContract(hash(preimage.toXDR()));
   if (poolAddress) {
     addressBook.setContractId(pool_name, poolAddress);
     addressBook.writeToFile();
@@ -233,23 +205,6 @@ async function deploy() {
     TreasuryFactoryContract.parsers.deploy,
     txParams
   );
-  /*
-  const networkId2 = hash(Buffer.from(config.passphrase));
-  const preimage2 = xdr.HashIdPreimage.envelopeTypeContractId(
-    new xdr.HashIdPreimageContractId({
-      networkId: networkId2,
-      contractIdPreimage: xdr.ContractIdPreimage.contractIdPreimageFromAddress(
-        new xdr.ContractIdPreimageFromAddress({
-          address: xdr.ScAddress.scAddressTypeContract(
-            StrKey.decodeContract(treasuryFactory.address)
-          ),
-          salt: treasurySalt,
-        })
-      ),
-    })
-  );
-  const contractId2 = StrKey.encodeContract(hash(preimage2.toXDR()));
-  */
 
   addressBook.setContractId('treasury', treasuryId);
   addressBook.writeToFile();

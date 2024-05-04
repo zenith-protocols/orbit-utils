@@ -1,13 +1,6 @@
-import {
-  BackstopContract,
-  EmitterContract,
-  Network,
-  PoolFactoryContract,
-  PoolInitMeta,
-} from '@blend-capital/blend-sdk';
-import { Address, Asset } from '@stellar/stellar-sdk';
-import { CometContract } from '../external/comet.js';
-import { tryDeployStellarAsset } from '../utils/stellar-asset.js';
+import { Address } from '@stellar/stellar-sdk';
+//import { CometContract } from '../external/comet.js';
+//import { tryDeployStellarAsset } from '../utils/stellar-asset.js';
 import { AddressBook } from '../utils/address-book.js';
 import {
   airdropAccount,

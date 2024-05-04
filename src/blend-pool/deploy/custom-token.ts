@@ -7,7 +7,7 @@ import {
 } from '../../utils/contract.js';
 import { TxParams, invokeSorobanOperation } from '../../utils/tx.js';
 
-async function deployCustomToken(
+export async function deployCustomToken(
   admin: string,
   name: string,
   symbol: string,
