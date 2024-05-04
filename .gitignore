@@ -4,7 +4,7 @@ lib
 .DS_Store
 
 src/scripts/temp.ts
-
+.soroban
 # configuration files
 .env
 *.contracts.json

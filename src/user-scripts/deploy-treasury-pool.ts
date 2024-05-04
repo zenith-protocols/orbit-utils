@@ -22,7 +22,7 @@ import {
   SorobanRpc,
 } from '@stellar/stellar-sdk';
 import { CometContract } from '../external/comet.js';
-import { addressBook } from '../utils/address_book.js';
+import { addressBook } from '../utils/address-book.js';
 import { config } from '../utils/env_config.js';
 //import { invokeClassicOp, logInvocation, signWithKeypair, TxParams } from '../utils/tx.js';
 import {
@@ -32,7 +32,6 @@ import {
   invokeSorobanOperation,
   sendTransaction,
 } from '../utils/tx.js';
-import { logInvocation } from '../utils/tx.old.js';
 
 import {
   airdropAccount,
@@ -210,7 +209,7 @@ async function deploy() {
     })
   );
   */
-  
+
   //const contractId = StrKey.encodeContract(hash(preimage.toXDR()));
   if (poolAddress) {
     addressBook.setContractId(pool_name, poolAddress);
@@ -356,24 +355,5 @@ async function deploy() {
 }
 
 const network = process.argv[2];
-/*
-const addressBook = AddressBook.loadFromFile(network);
-const rpc_network: Network = {
-  rpc: config.rpc.serverURL.toString(),
-  passphrase: config.passphrase,
-  opts: { allowHttp: true },
-};
-const tx_options: TxOptions = {
-  sim: false,
-  pollingInterval: 2000,
-  timeout: 30000,
-  builderOptions: {
-    fee: '10000',
-    timebounds: {
-      minTime: 0,
-      maxTime: 0,
-    },
-    networkPassphrase: config.passphrase,
-  },
-  */
+
 await deploy();

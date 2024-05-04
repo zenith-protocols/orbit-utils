@@ -1,15 +1,14 @@
 import {
-  BackstopClient,
-  EmitterClient,
+  BackstopContract,
+  EmitterContract,
   Network,
-  PoolFactoryClient,
+  PoolFactoryContract,
   PoolInitMeta,
-  TxOptions,
 } from '@blend-capital/blend-sdk';
 import { Asset } from '@stellar/stellar-sdk';
-import { CometClient } from '../external/comet.js';
-import { tryDeployStellarAsset } from '../external/token.js';
-import { AddressBook } from '../utils/address_book.js';
+import { CometContract } from '../external/comet.js';
+import { tryDeployStellarAsset } from '../utils/stellar-asset.js';
+import { AddressBook } from '../utils/address-book.js';
 import {
   airdropAccount,
   bumpContractCode,
@@ -18,139 +17,122 @@ import {
   installContract,
 } from '../utils/contract.js';
 import { config } from '../utils/env_config.js';
-import { logInvocation, signWithKeypair } from '../utils/tx.js';
+import { TxParams, invokeSorobanOperation, signWithKeypair } from '../utils/tx.js';
 
 export async function deployAndInitContracts(addressBook: AddressBook) {
-  const signWithAdmin = (txXdr: string) =>
-    signWithKeypair(txXdr, rpc_network.passphrase, config.admin);
+  const txParams: TxParams = {
+    account: await config.rpc.getAccount(config.admin.publicKey()),
+    txBuilderOptions: {
+      fee: '10000',
+      timebounds: {
+        minTime: 0,
+        maxTime: 0,
+      },
+      networkPassphrase: config.passphrase,
+    },
+    signerFunction: async (txXdr: string) => {
+      return signWithKeypair(txXdr, config.passphrase, config.admin);
+    },
+  };
   await airdropAccount(config.admin);
 
   console.log('Installing Blend Contracts');
-  await installContract('emitter', addressBook, config.admin);
-  await bumpContractCode('emitter', addressBook, config.admin);
-  await installContract('poolFactory', addressBook, config.admin);
-  await bumpContractCode('poolFactory', addressBook, config.admin);
-  await installContract('token', addressBook, config.admin);
-  await bumpContractCode('token', addressBook, config.admin);
-  await installContract('backstop', addressBook, config.admin);
-  await bumpContractCode('backstop', addressBook, config.admin);
-  await installContract('lendingPool', addressBook, config.admin);
-  await bumpContractCode('lendingPool', addressBook, config.admin);
+  await installContract('emitter', txParams);
+  await bumpContractCode('emitter', txParams);
+  await installContract('poolFactory', txParams);
+  await bumpContractCode('poolFactory', txParams);
+  await installContract('token', txParams);
+  await bumpContractCode('token', txParams);
+  await installContract('backstop', txParams);
+  await bumpContractCode('backstop', txParams);
+  await installContract('lendingPool', txParams);
+  await bumpContractCode('lendingPool', txParams);
 
-  if (network != 'mainnet') {
+  if (network !== 'mainnet') {
     // mocks
     console.log('Installing and deploying: Blend Mocked Contracts');
-    await installContract('oraclemock', addressBook, config.admin);
-    await bumpContractCode('oraclemock', addressBook, config.admin);
-    await deployContract('oraclemock', 'oraclemock', addressBook, config.admin);
-    await bumpContractInstance('oraclemock', addressBook, config.admin);
+    await installContract('oraclemock', txParams);
+    await bumpContractCode('oraclemock', txParams);
+    await deployContract('oraclemock', 'oraclemock', txParams);
+    await bumpContractInstance('oraclemock', txParams);
     // Tokens
     console.log('Installing and deploying: Tokens');
-    await tryDeployStellarAsset(addressBook, config.admin, Asset.native());
-    await bumpContractInstance('XLM', addressBook, config.admin);
-    await tryDeployStellarAsset(
-      addressBook,
-      config.admin,
-      new Asset('USDC', config.admin.publicKey())
-    );
-    await bumpContractInstance('USDC', addressBook, config.admin);
-    await tryDeployStellarAsset(
-      addressBook,
-      config.admin,
-      new Asset('BLND', config.admin.publicKey())
-    );
-    await bumpContractInstance('BLND', addressBook, config.admin);
-    await tryDeployStellarAsset(
-      addressBook,
-      config.admin,
-      new Asset('wETH', config.admin.publicKey())
-    );
-    await bumpContractInstance('wETH', addressBook, config.admin);
-    await tryDeployStellarAsset(
-      addressBook,
-      config.admin,
-      new Asset('wBTC', config.admin.publicKey())
-    );
-    await bumpContractInstance('wBTC', addressBook, config.admin);
+    await tryDeployStellarAsset(Asset.native(), txParams);
+    await bumpContractInstance('XLM', txParams);
+    await tryDeployStellarAsset(new Asset('USDC', config.admin.publicKey()), txParams);
+    await bumpContractInstance('USDC', txParams);
+
+    await tryDeployStellarAsset(new Asset('BLND', config.admin.publicKey()), txParams);
+    await bumpContractInstance('BLND', txParams);
+
+    await tryDeployStellarAsset(new Asset('wETH', config.admin.publicKey()), txParams);
+    await bumpContractInstance('wETH', txParams);
+
+    await tryDeployStellarAsset(new Asset('wBTC', config.admin.publicKey()), txParams);
+    await bumpContractInstance('wBTC', txParams);
     // Comet LP
-    await installContract('comet', addressBook, config.admin);
-    await bumpContractCode('comet', addressBook, config.admin);
-    await deployContract('comet', 'comet', addressBook, config.admin);
-    await bumpContractInstance('comet', addressBook, config.admin);
-    const comet = new CometClient(addressBook.getContractId('comet'));
-    await comet.init(config.admin.publicKey(), config.admin);
+    await installContract('comet', txParams);
+    await bumpContractCode('comet', txParams);
+    await deployContract('comet', 'comet', txParams);
+    await bumpContractInstance('comet', txParams);
+    const comet = new CometContract(addressBook.getContractId('comet'));
+    //await comet.init(config.admin.publicKey(), txParams);//this threw an error. i think it needs commetfactory
   }
 
   console.log('Deploying and Initializing Blend');
-  await deployContract('emitter', 'emitter', addressBook, config.admin);
-  await bumpContractInstance('emitter', addressBook, config.admin);
-  const emitter = new EmitterClient(addressBook.getContractId('emitter'));
-  await deployContract('backstop', 'backstop', addressBook, config.admin);
-  await bumpContractInstance('backstop', addressBook, config.admin);
-  const backstop = new BackstopClient(addressBook.getContractId('backstop'));
-  await deployContract('poolFactory', 'poolFactory', addressBook, config.admin);
-  await bumpContractInstance('poolFactory', addressBook, config.admin);
-  const poolFactory = new PoolFactoryClient(addressBook.getContractId('poolFactory'));
+  await deployContract('emitter', 'emitter', txParams);
+  await bumpContractInstance('emitter', txParams);
+  const emitter = new EmitterContract(addressBook.getContractId('emitter'));
+  await deployContract('backstop', 'backstop', txParams);
+  await bumpContractInstance('backstop', txParams);
+  const backstop = new BackstopContract(addressBook.getContractId('backstop'));
+  await deployContract('poolFactory', 'poolFactory', txParams);
+  await bumpContractInstance('poolFactory', txParams);
+  const poolFactory = new PoolFactoryContract(addressBook.getContractId('poolFactory'));
 
-  await logInvocation(
-    emitter.initialize(config.admin.publicKey(), signWithAdmin, rpc_network, tx_options, {
-      blnd_token: addressBook.getContractId('BLND'),
-      backstop: addressBook.getContractId('backstop'),
-      backstop_token: addressBook.getContractId('comet'),
-    })
+  const emitterInitArgs = {
+    blnd_token: addressBook.getContractId('BLND'),
+    backstop: addressBook.getContractId('backstop'),
+    backstop_token: addressBook.getContractId('comet'),
+  };
+  await invokeSorobanOperation(
+    emitter.initialize(emitterInitArgs),
+    EmitterContract.parsers.initialize,
+    txParams
   );
 
-  await logInvocation(
-    backstop.initialize(config.admin.publicKey(), signWithAdmin, rpc_network, tx_options, {
-      backstop_token: addressBook.getContractId('comet'),
-      emitter: addressBook.getContractId('emitter'),
-      usdc_token: addressBook.getContractId('USDC'),
-      blnd_token: addressBook.getContractId('BLND'),
-      pool_factory: addressBook.getContractId('poolFactory'),
-      drop_list: new Map(),
-    })
+  const backstopInitArgs = {
+    backstop_token: addressBook.getContractId('comet'),
+    emitter: addressBook.getContractId('emitter'),
+    usdc_token: addressBook.getContractId('USDC'),
+    blnd_token: addressBook.getContractId('BLND'),
+    pool_factory: addressBook.getContractId('poolFactory'),
+    drop_list: [],
+  };
+  await invokeSorobanOperation(
+    backstop.initialize(backstopInitArgs),
+    BackstopContract.parsers.initialize,
+    txParams
   );
 
   const poolInitMeta: PoolInitMeta = {
     backstop: addressBook.getContractId('backstop'),
     blnd_id: addressBook.getContractId('BLND'),
-    usdc_id: addressBook.getContractId('USDC'),
     pool_hash: Buffer.from(addressBook.getWasmHash('lendingPool'), 'hex'),
   };
-  await logInvocation(
-    poolFactory.initialize(
-      config.admin.publicKey(),
-      signWithAdmin,
-      rpc_network,
-      tx_options,
-      poolInitMeta
-    )
+  await invokeSorobanOperation(
+    poolFactory.initialize(poolInitMeta),
+    PoolFactoryContract.parsers.initialize,
+    txParams
   );
-  await bumpContractInstance('backstop', addressBook, config.admin);
-  await bumpContractInstance('emitter', addressBook, config.admin);
-  await bumpContractInstance('poolFactory', addressBook, config.admin);
+
+  await bumpContractInstance('backstop', txParams);
+  await bumpContractInstance('emitter', txParams);
+  await bumpContractInstance('poolFactory', txParams);
 }
 
 const network = process.argv[2];
 const addressBook = AddressBook.loadFromFile(network);
 
-const rpc_network: Network = {
-  rpc: config.rpc.serverURL.toString(),
-  passphrase: config.passphrase,
-  opts: { allowHttp: true },
-};
-const tx_options: TxOptions = {
-  sim: false,
-  pollingInterval: 2000,
-  timeout: 30000,
-  builderOptions: {
-    fee: '10000',
-    timebounds: {
-      minTime: 0,
-      maxTime: 0,
-    },
-    networkPassphrase: config.passphrase,
-  },
-};
 await deployAndInitContracts(addressBook);
 addressBook.writeToFile();

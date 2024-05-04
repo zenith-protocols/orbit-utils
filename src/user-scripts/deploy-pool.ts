@@ -8,8 +8,8 @@ import {
 import { Operation, SorobanRpc, Transaction, TransactionBuilder, xdr } from '@stellar/stellar-sdk';
 import { randomBytes } from 'crypto';
 import { CometContract } from '../external/comet.js';
-import { setupPool } from '../pool/pool-setup.js';
-import { setupReserve } from '../pool/reserve-setup.js';
+import { setupPool } from '../blend-pool/pool-setup.js';
+import { setupReserve } from '../blend-pool/reserve-setup.js';
 import { addressBook } from '../utils/address-book.js';
 import { airdropAccount } from '../utils/contract.js';
 import { config } from '../utils/env_config.js';
