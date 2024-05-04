@@ -11,3 +11,8 @@ src/scripts/temp.ts
 !futurenet.contracts.json
 !testnet.contracts.json
 !mainnet.contracts.json
+.old
+*.old
+*.old.ts
+*.old.js
+**/*.old.ts

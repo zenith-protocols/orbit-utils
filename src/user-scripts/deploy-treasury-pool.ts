@@ -376,4 +376,4 @@ const tx_options: TxOptions = {
     networkPassphrase: config.passphrase,
   },
   */
-await deploy(addressBook);
+await deploy();
