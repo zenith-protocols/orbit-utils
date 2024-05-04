@@ -16,6 +16,13 @@ export type TxParams = {
   txBuilderOptions: TransactionBuilder.TransactionBuilderOptions;
 };
 
+/**
+ * Signs a Stellar transaction with a given Keypair.
+ * @param {string} txXdr - The transaction in XDR format.
+ * @param {string} passphrase - The network passphrase.
+ * @param {Keypair} source - The Keypair to sign the transaction with.
+ * @returns {Promise<string>} The signed transaction in XDR format.
+ */
 export async function signWithKeypair(
   txXdr: string,
   passphrase: string,
@@ -26,6 +33,12 @@ export async function signWithKeypair(
   return tx.toXDR();
 }
 
+/**
+ * Simulates a Stellar operation to check for errors before submitting to the network.
+ * @param {string} operation - The operation to simulate in base64 XDR format.
+ * @param {TxParams} txParams - Transaction parameters including account and builder options.
+ * @returns {Promise<SorobanRpc.Api.SimulateTransactionResponse>} The simulation response.
+ */
 export async function simulationOperation(
   operation: string,
   txParams: TxParams
@@ -38,6 +51,13 @@ export async function simulationOperation(
   return simulation;
 }
 
+/**
+ * Sends a signed Stellar transaction and returns the result after parsing.
+ * @template T The type of the expected result.
+ * @param {Transaction} transaction - The transaction to send.
+ * @param {(result: string) => T} parser - A function to parse the result.
+ * @returns {Promise<T | undefined>} The parsed result of the transaction.
+ */
 export async function sendTransaction<T>(
   transaction: Transaction,
   parser: (result: string) => T
@@ -71,6 +91,15 @@ export async function sendTransaction<T>(
   return result;
 }
 
+/**
+ * Invokes a Stellar Soroban operation and returns the parsed result.
+ * @template T The type of the expected result.
+ * @param {string} operation - The operation to invoke in base64 XDR format.
+ * @param {(result: string) => T} parser - A function to parse the result.
+ * @param {TxParams} txParams - Transaction parameters.
+ * @param {xdr.SorobanTransactionData} [sorobanData] - Optional Soroban transaction data.
+ * @returns {Promise<T | undefined>} The parsed result of the operation.
+ */
 export async function invokeSorobanOperation<T>(
   operation: string,
   parser: (result: string) => T,
@@ -106,6 +135,11 @@ export async function invokeSorobanOperation<T>(
   return response;
 }
 
+/**
+ * Submits a classic Stellar operation.
+ * @param {string} operation - The operation to submit in base64 XDR format.
+ * @param {TxParams} txParams - Transaction parameters.
+ */
 export async function invokeClassicOp(operation: string, txParams: TxParams) {
   const account = await config.rpc.getAccount(txParams.account.accountId());
   const txBuilder = new TransactionBuilder(account, txParams.txBuilderOptions)
@@ -116,11 +150,13 @@ export async function invokeClassicOp(operation: string, txParams: TxParams) {
     await txParams.signerFunction(transaction.toXDR()),
     config.passphrase
   );
-  console.log('Transaction Hash:', signedTx.hash().toString('hex'));
+  console.log(
+    `Submitting classic operation with transaction hash: ${signedTx.hash().toString('hex')}`
+  );
   try {
     await sendTransaction(signedTx, () => undefined);
   } catch (e) {
-    console.error(e);
+    console.error('Error submitting classic operation: ', e);
     throw Error('failed to submit classic op TX');
   }
 }
