@@ -41,8 +41,8 @@ export async function deployAndInitContracts(addressBook: AddressBook) {
   await bumpContractCode('emitter', txParams);
   await installContract('poolFactory', txParams);
   await bumpContractCode('poolFactory', txParams);
-  await installContract('token', txParams);
-  await bumpContractCode('token', txParams);
+  //await installContract('token', txParams);
+  //await bumpContractCode('token', txParams);
   await installContract('backstop', txParams);
   await bumpContractCode('backstop', txParams);
   await installContract('lendingPool', txParams);

@@ -2,6 +2,8 @@ import { parseError, parseResult } from '@blend-capital/blend-sdk';
 import {
   Account,
   Keypair,
+  Operation,
+  SorobanDataBuilder,
   SorobanRpc,
   TimeoutInfinite,
   Transaction,
@@ -29,7 +31,17 @@ export async function signWithKeypair(
   source: Keypair
 ): Promise<string> {
   const tx = new Transaction(txXdr, passphrase);
+  // Retrieve the transaction hash used for signatures.
+  const txHash = tx.hash();
+  console.log(`txhash in signer: ${txHash.toString('hex')}`);
+  const sourceKeypair = Keypair.fromPublicKey(tx.source);
+
   tx.sign(source);
+  const signed = tx.signatures.some((signature) => {
+    // Verify the signature with the source account's public key.
+    return sourceKeypair.verify(txHash, signature.signature());
+  });
+  console.log(`Was it signed in the signer function? ${signed}`);
   return tx.toXDR();
 }
 
@@ -62,33 +74,80 @@ export async function sendTransaction<T>(
   transaction: Transaction,
   parser: (result: string) => T
 ): Promise<T | undefined> {
-  let send_tx_response = await config.rpc.sendTransaction(transaction);
-  const curr_time = Date.now();
-  while (send_tx_response.status === 'TRY_AGAIN_LATER' && Date.now() - curr_time < 20000) {
-    await new Promise((resolve) => setTimeout(resolve, 4000));
-    send_tx_response = await config.rpc.sendTransaction(transaction);
-  }
-  if (send_tx_response.status !== 'PENDING') {
-    const error = parseError(send_tx_response);
-    console.error('Transaction failed to send: ' + send_tx_response.hash);
-    throw error;
-  }
+  try {
+    let send_tx_response = await config.rpc.sendTransaction(transaction);
+    const curr_time = Date.now();
+    while (send_tx_response.status === 'TRY_AGAIN_LATER' && Date.now() - curr_time < 20000) {
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      send_tx_response = await config.rpc.sendTransaction(transaction);
+    }
+    if (send_tx_response.status !== 'PENDING') {
+      const error = parseError(send_tx_response);
+      console.error('Transaction failed to send:', send_tx_response.hash, 'Error:', error);
+      throw error;
+    }
 
-  let get_tx_response = await config.rpc.getTransaction(send_tx_response.hash);
-  while (get_tx_response.status === 'NOT_FOUND') {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    get_tx_response = await config.rpc.getTransaction(send_tx_response.hash);
-  }
+    let get_tx_response = await config.rpc.getTransaction(send_tx_response.hash);
+    while (get_tx_response.status === 'NOT_FOUND') {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      get_tx_response = await config.rpc.getTransaction(send_tx_response.hash);
+    }
 
-  if (get_tx_response.status !== 'SUCCESS') {
-    console.log('Tx Failed: ', get_tx_response.status);
-    const error = parseError(get_tx_response);
-    throw error;
+    if (get_tx_response.status === 'SUCCESS') {
+      const result = parseResult(get_tx_response, parser);
+      console.log(
+        'Transaction successfully submitted with hash:',
+        send_tx_response.hash,
+        'Result:',
+        result
+      );
+      return result;
+    } else {
+      console.log('Transaction failed:', get_tx_response.status);
+      const error = parseError(get_tx_response);
+      console.error('Transaction failure detail:', error);
+      throw error; // Rethrow to ensure calling code can handle it
+    }
+  } catch (error) {
+    console.error('An exception occurred while sending the transaction:', error);
+    throw error; // Ensure that errors are propagated
   }
+}
+/**
+ * Handles the restoration of a Soroban contract.
+ * @param {SorobanRpc.Api.SimulateTransactionRestoreResponse} simResponse - The simulation response containing restoration information.
+ * @param {TxParams} txParams - The transaction parameters.
+ * @returns {Promise<void>} A promise that resolves when the restoration transaction has been submitted.
+ */
+async function handleRestoration(
+  simResponse: SorobanRpc.Api.SimulateTransactionRestoreResponse,
+  txParams: TxParams
+): Promise<void> {
+  const restorePreamble = simResponse.restorePreamble;
+  console.log('Restoring for account:', txParams.account.accountId());
 
-  console.log('Tx Submitted!');
-  const result = parseResult(get_tx_response, parser);
-  return result;
+  // Construct the transaction builder with the necessary parameters
+  const restoreTx = new TransactionBuilder(txParams.account, {
+    ...txParams.txBuilderOptions,
+    fee: restorePreamble.minResourceFee, // Update fee based on the restoration requirement
+  })
+    .setSorobanData(restorePreamble.transactionData.build()) // Set Soroban Data from the simulation
+    .addOperation(Operation.restoreFootprint({})) // Add the RestoreFootprint operation
+    .build(); // Build the transaction
+
+  // Sign the transaction using the provided signerFunction
+  const signedXdr = await txParams.signerFunction(restoreTx.toXDR());
+  const signedTransaction = new Transaction(signedXdr, config.passphrase);
+  console.log('Submitting restoration transaction');
+
+  try {
+    // Submit the transaction to the network
+    const response = await config.rpc.sendTransaction(signedTransaction);
+    console.log('Restoration transaction submitted successfully:', response.hash);
+  } catch (error) {
+    console.error('Failed to submit restoration transaction:', error);
+    throw new Error('Restoration transaction failed');
+  }
 }
 
 /**
@@ -106,33 +165,88 @@ export async function invokeSorobanOperation<T>(
   txParams: TxParams,
   sorobanData?: xdr.SorobanTransactionData
 ): Promise<T | undefined> {
+  console.log('invoking soroban operation');
   const account = await config.rpc.getAccount(txParams.account.accountId());
+  console.log('the account is', account);
   const txBuilder = new TransactionBuilder(account, txParams.txBuilderOptions)
     .addOperation(xdr.Operation.fromXDR(operation, 'base64'))
     .setTimeout(TimeoutInfinite);
   if (sorobanData) {
     txBuilder.setSorobanData(sorobanData);
   }
+  // After building the transaction
   const transaction = txBuilder.build();
-  const simulation = await config.rpc.simulateTransaction(transaction);
+  console.log('Transaction built with sequence number:', transaction.sequence);
+  // Simulate the transaction
+  const simulation: SorobanRpc.Api.SimulateTransactionResponse =
+    await config.rpc.simulateTransaction(transaction);
+  console.log('Simulation events result:', simulation.events);
+  console.log('simulation stringified', JSON.stringify(simulation));
+  // After the simulation check, if restoration is needed
+  if (SorobanRpc.Api.isSimulationRestore(simulation)) {
+    console.log('Restoration needed for successful simulation.');
+    const restorePreamble = simulation.restorePreamble;
+
+    // Checking and logging the minimum resource fee required for restoration
+    if (restorePreamble && restorePreamble.minResourceFee) {
+      console.log(`Minimum resource fee needed: ${restorePreamble.minResourceFee}`);
+    }
+
+    // Processing the transaction data needed for restoration
+    if (restorePreamble && restorePreamble.transactionData) {
+      const sorobanDataBuilder = restorePreamble.transactionData;
+
+      // Get the read-only and read-write keys using methods from SorobanDataBuilder
+      const readOnlyKeys = sorobanDataBuilder.getReadOnly();
+      const readWriteKeys = sorobanDataBuilder.getReadWrite();
+
+      // Log read-only entries
+      if (readOnlyKeys.length > 0) {
+        console.log('Read-only entries that may need restoration:');
+        readOnlyKeys.forEach((key, index) => {
+          console.log(`Entry ${index + 1}:`, key);
+        });
+      }
+
+      // Log read-write entries
+      if (readWriteKeys.length > 0) {
+        console.log('Read-write entries that may need restoration:');
+        readWriteKeys.forEach((key, index) => {
+          console.log(`Entry ${index + 1}:`, key);
+        });
+      }
+    }
+    await handleRestoration(simulation, txParams);
+    return invokeSorobanOperation(operation, parser, txParams, sorobanData);
+  }
+
   if (SorobanRpc.Api.isSimulationError(simulation)) {
-    console.log('is simulation error');
-    console.log('xdr: ', transaction.toXDR());
-    console.log('simulation: ', simulation);
-    const error = parseError(simulation);
-    console.error(error);
-    throw error;
+    console.log('Simulation error with details:', simulation);
+    throw new Error('Simulation failed with errors');
   }
 
   const assembledTx = SorobanRpc.assembleTransaction(transaction, simulation).build();
-  console.log('Transaction Hash:', assembledTx.hash().toString('hex'));
+
   const signedTx = new Transaction(
     await txParams.signerFunction(assembledTx.toXDR()),
     config.passphrase
   );
+  // Check if transaction is correctly signed
+  const sourceKeypair = Keypair.fromPublicKey(txParams.account.accountId());
+  const txHash = signedTx.hash();
+  const isSignedCorrectly = signedTx.signatures.some((signature) =>
+    sourceKeypair.verify(txHash, signature.signature())
+  );
+  console.log('Is transaction correctly signed by source?', isSignedCorrectly);
 
-  const response = await sendTransaction(signedTx, parser);
-  return response;
+  // Submit the transaction
+  try {
+    const response = await sendTransaction(signedTx, parser);
+    return response;
+  } catch (error) {
+    console.error('Transaction submission failed with error:', error);
+    throw error;
+  }
 }
 
 /**

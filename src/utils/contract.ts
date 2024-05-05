@@ -1,4 +1,13 @@
-import { Address, Keypair, Operation, StrKey, hash, xdr } from '@stellar/stellar-sdk';
+import {
+  Address,
+  Keypair,
+  Operation,
+  Soroban,
+  SorobanRpc,
+  StrKey,
+  hash,
+  xdr,
+} from '@stellar/stellar-sdk';
 import { randomBytes } from 'crypto';
 import { readFileSync } from 'fs';
 import path from 'path';
@@ -19,14 +28,73 @@ const CONTRACT_REL_PATH = {
   lendingPool: `../../${config.blend_wasm_rel_path}pool.wasm`,
   tokenLockup: `../../${config.token_lockup_wasm_rel_path}token_lockup.wasm`,
   blendLockup: `../../${config.blend_lockup_wasm_rel_path}blend_lockup.wasm`,
-  treasury: `../../../${config.orbit_wasm_rel_path}treasury.wasm`,
-  treasuryFactory: `../../../${config.orbit_wasm_rel_path}treasury_factory.wasm`,
-  bridgeOracle: `../../../${config.orbit_wasm_rel_path}bridge_oracle.wasm`,
+  treasury: `../../${config.orbit_wasm_rel_path}treasury.wasm`,
+  treasuryFactory: `../../${config.orbit_wasm_rel_path}treasury_factory.wasm`,
+  bridgeOracle: `../../${config.orbit_wasm_rel_path}bridge_oracle.wasm`,
 };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Converts a WASM hash to a LedgerKey for contract code.
+ * @param wasmHash - The hash of the WASM.
+ * @returns The LedgerKey for contract code.
+ */
+function getLedgerKeyWasmId(wasmHash: Buffer): xdr.LedgerKey {
+  const ledgerKey = xdr.LedgerKey.contractCode(
+    new xdr.LedgerKeyContractCode({
+      hash: wasmHash,
+    })
+  );
+  console.log(
+    `retrieved a ledger key for wasm id ${wasmHash.toString('hex')}
+     and it is ${JSON.stringify(ledgerKey)}`
+  );
+
+  return ledgerKey;
+}
+
+/**
+ * Retrieves the ledger entry for a contract code using its hash.
+ * @param wasmHash - The hash of the WASM to check.
+ * @param server - The instance of the SorobanRpc Server.
+ * @returns The ledger entry result if found.
+ */
+async function getContractCodeLedgerEntry(
+  wasmHash: Buffer
+  // server: SorobanRpc.Server
+): Promise<SorobanRpc.Api.LedgerEntryResult | undefined> {
+  const ledgerKey = getLedgerKeyWasmId(wasmHash);
+  try {
+    const response = await config.rpc.getLedgerEntries(...[ledgerKey]);
+    if (response.entries && response.entries.length > 0) {
+      console.log('Ledger entry found:', response.entries[0]);
+      const entry = response.entries[0]; // Taking the first entry for demonstration
+      console.log('Key:', entry.key);
+      console.log('Value:', entry.val);
+      console.log('Last Modified Ledger Sequence:', entry.lastModifiedLedgerSeq);
+      console.log('Live Until Ledger Sequence:', entry.liveUntilLedgerSeq);
+      console.log('Latest Ledger Indexed:', response.latestLedger);
+      //console.log(JSON.stringify(response));
+      return response.entries[0];
+    } else {
+      console.log('No ledger entry found for the given WASM hash.');
+    }
+  } catch (error) {
+    console.error('Failed to fetch ledger entries:', error);
+    throw error;
+  }
+  return undefined;
+}
+
+export async function lookupContract(wasmKey: string, txParams: TxParams) {
+  const contractWasm = readFileSync(
+    path.join(__dirname, CONTRACT_REL_PATH[wasmKey as keyof object])
+  );
+  const wasmHash = hash(contractWasm);
+  return getContractCodeLedgerEntry(wasmHash);
+}
 /**
  * Installs a contract by uploading its WASM to the blockchain.
  * @param {string} wasmKey - Key to identify which contract's WASM to upload.
@@ -38,12 +106,13 @@ export async function installContract(wasmKey: string, txParams: TxParams): Prom
     path.join(__dirname, CONTRACT_REL_PATH[wasmKey as keyof object])
   );
   const wasmHash = hash(contractWasm);
+  getContractCodeLedgerEntry(wasmHash);
   addressBook.setWasmHash(wasmKey, wasmHash.toString('hex'));
   const op = Operation.invokeHostFunction({
     func: xdr.HostFunction.hostFunctionTypeUploadContractWasm(contractWasm),
     auth: [],
   });
-  console.log(`Uploading contract WASM for ${wasmKey}`);
+  console.log(`\n\nUploading contract WASM for ${wasmKey}`);
   await invokeSorobanOperation(op.toXDR('base64'), () => undefined, txParams);
   addressBook.writeToFile();
   console.log(`Contract installed with hash: ${wasmHash.toString('hex')}`);
@@ -52,7 +121,7 @@ export async function installContract(wasmKey: string, txParams: TxParams): Prom
 
 /**
  * Deploys a contract instance on the blockchain.
- * @param {string} contractKey - Key to store the deployed contract's ID.
+ * @param {string} contractKey - Key to store the deployed contract's ID in the addressbook.
  * @param {string} wasmKey - Key to fetch the WASM hash used for deployment.
  * @param {TxParams} txParams - Transaction parameters.
  * @returns {Promise<string>} The contract ID of the deployed instance.
@@ -92,7 +161,7 @@ export async function deployContract(
     auth: [],
   });
   addressBook.writeToFile();
-  console.log(`Deploying contract ${contractKey} with ID ${contractId}`);
+  console.log(`\n\nDeploying contract ${contractKey} with ID ${contractId}`);
   await invokeSorobanOperation(deployOp.toXDR('base64'), () => undefined, txParams);
   return contractId;
 }
@@ -126,7 +195,7 @@ export async function bumpContractInstance(contractKey: string, txParams: TxPara
     // @ts-ignore
     ext: new xdr.ExtensionPoint(0),
   });
-  console.log(`Bumping the contract instance for ${contractKey}`);
+  console.log(`\n\nBumping the contract instance for ${contractKey}`);
   await invokeSorobanOperation(
     Operation.extendFootprintTtl({ extendTo: 535670 }).toXDR('base64'),
     () => undefined,
@@ -162,7 +231,7 @@ export async function bumpContractCode(wasmKey: string, txParams: TxParams) {
     // @ts-ignore
     ext: new xdr.ExtensionPoint(0),
   });
-  console.log(`Bumping the contract code for WASM hash associated with key: ${wasmKey}`);
+  console.log(`\n\nBumping the contract code for WASM hash associated with key: ${wasmKey}`);
   await invokeSorobanOperation(
     Operation.extendFootprintTtl({ extendTo: 535670 }).toXDR('base64'),
     () => undefined,

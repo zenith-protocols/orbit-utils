@@ -26,6 +26,7 @@ export async function deployAndInitContracts(addressBook: AddressBook) {
       networkPassphrase: config.passphrase,
     },
     signerFunction: async (txXdr: string) => {
+      console.log(`passphrase: ${config.passphrase},sourceAcct: ${config.admin.publicKey}`);
       return signWithKeypair(txXdr, config.passphrase, config.admin);
     },
   };
@@ -36,8 +37,6 @@ export async function deployAndInitContracts(addressBook: AddressBook) {
   await bumpContractCode('treasuryFactory', txParams);
   await installContract('treasury', txParams);
   await bumpContractCode('treasury', txParams);
-  await installContract('token', txParams);
-  await bumpContractCode('token', txParams);
   await installContract('bridgeOracle', txParams);
   await bumpContractCode('bridgeOracle', txParams);
 
@@ -52,11 +51,13 @@ export async function deployAndInitContracts(addressBook: AddressBook) {
     pool_factory: addressBook.getContractId('poolFactory'),
   };
 
-  await invokeSorobanOperation(
+  console.log(`\n\ninitializing treasury factory`);
+  const invokecall = await invokeSorobanOperation(
     treasuryFactory.initialize(Address.fromString(config.admin.publicKey()), treasuryInitMeta),
     TreasuryFactoryContract.parsers.initialize,
     txParams
   );
+  console.log(invokecall);
 
   await bumpContractInstance('treasuryFactory', txParams);
 }
