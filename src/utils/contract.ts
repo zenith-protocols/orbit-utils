@@ -41,16 +41,13 @@ const __dirname = path.dirname(__filename);
  * @param wasmHash - The hash of the WASM.
  * @returns The LedgerKey for contract code.
  */
-function getLedgerKeyWasmId(wasmHash: Buffer): xdr.LedgerKey {
+export function getLedgerKeyWasmId(wasmHash: Buffer): xdr.LedgerKey {
   const ledgerKey = xdr.LedgerKey.contractCode(
     new xdr.LedgerKeyContractCode({
       hash: wasmHash,
     })
   );
-  console.log(
-    `retrieved a ledger key for wasm id ${wasmHash.toString('hex')}
-     and it is ${JSON.stringify(ledgerKey)}`
-  );
+  console.log(`retrieved a ledger key for wasm id ${wasmHash.toString('hex')}`);
 
   return ledgerKey;
 }
@@ -61,23 +58,21 @@ function getLedgerKeyWasmId(wasmHash: Buffer): xdr.LedgerKey {
  * @param server - The instance of the SorobanRpc Server.
  * @returns The ledger entry result if found.
  */
-async function getContractCodeLedgerEntry(
+export async function getContractCodeLedgerEntry(
   wasmHash: Buffer
   // server: SorobanRpc.Server
-): Promise<SorobanRpc.Api.LedgerEntryResult | undefined> {
+): Promise<{ latestLedger: number; entries: SorobanRpc.Api.LedgerEntryResult[] } | undefined> {
   const ledgerKey = getLedgerKeyWasmId(wasmHash);
   try {
     const response = await config.rpc.getLedgerEntries(...[ledgerKey]);
+    const entries = [];
+    entries.push(...response.entries);
     if (response.entries && response.entries.length > 0) {
-      console.log('Ledger entry found:', response.entries[0]);
-      const entry = response.entries[0]; // Taking the first entry for demonstration
-      console.log('Key:', entry.key);
-      console.log('Value:', entry.val);
-      console.log('Last Modified Ledger Sequence:', entry.lastModifiedLedgerSeq);
-      console.log('Live Until Ledger Sequence:', entry.liveUntilLedgerSeq);
-      console.log('Latest Ledger Indexed:', response.latestLedger);
-      //console.log(JSON.stringify(response));
-      return response.entries[0];
+      console.log(`${response.entries.length} response.entries and ${entries.length} entries`);
+      return {
+        latestLedger: response.latestLedger,
+        entries: entries,
+      };
     } else {
       console.log('No ledger entry found for the given WASM hash.');
     }
@@ -87,8 +82,14 @@ async function getContractCodeLedgerEntry(
   }
   return undefined;
 }
-
-export async function lookupContract(wasmKey: string, txParams: TxParams) {
+export async function lookupContractHash(wasmKey: string) {
+  const contractWasm = readFileSync(
+    path.join(__dirname, CONTRACT_REL_PATH[wasmKey as keyof object])
+  );
+  const wasmHash = hash(contractWasm);
+  return wasmHash;
+}
+export async function lookupContract(wasmKey: string) {
   const contractWasm = readFileSync(
     path.join(__dirname, CONTRACT_REL_PATH[wasmKey as keyof object])
   );
@@ -106,7 +107,7 @@ export async function installContract(wasmKey: string, txParams: TxParams): Prom
     path.join(__dirname, CONTRACT_REL_PATH[wasmKey as keyof object])
   );
   const wasmHash = hash(contractWasm);
-  getContractCodeLedgerEntry(wasmHash);
+  const entries = getContractCodeLedgerEntry(wasmHash);
   addressBook.setWasmHash(wasmKey, wasmHash.toString('hex'));
   const op = Operation.invokeHostFunction({
     func: xdr.HostFunction.hostFunctionTypeUploadContractWasm(contractWasm),

@@ -36,7 +36,6 @@ export async function deployAndInitContracts(addressBook: AddressBook) {
   };
   await airdropAccount(config.admin);
 
-  console.log('Installing Blend Contracts');
   await installContract('emitter', txParams);
   await bumpContractCode('emitter', txParams);
   await installContract('poolFactory', txParams);

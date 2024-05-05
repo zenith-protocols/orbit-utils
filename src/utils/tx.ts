@@ -11,6 +11,7 @@ import {
   xdr,
 } from '@stellar/stellar-sdk';
 import { config } from './env_config.js';
+import { getContractCodeLedgerEntry, getLedgerKeyWasmId } from './contract.js';
 
 export type TxParams = {
   account: Account;
@@ -113,13 +114,83 @@ export async function sendTransaction<T>(
     throw error; // Ensure that errors are propagated
   }
 }
+
+/**
+ * Simulates a restoration transaction to determine if restoration is needed.
+ * @param wasmHash - The hash of the WASM to check.
+ * @param server - The instance of the SorobanRpc Server.
+ * @param signer - The Keypair of the account that would sign the transaction.
+ * @returns A promise that resolves to a simulation response, indicating whether restoration is needed.
+ */
+export async function simulateRestorationIfNeeded(
+  wasmHash: Buffer,
+  txParams: TxParams
+): Promise<SorobanRpc.Api.SimulateTransactionRestoreResponse | undefined> {
+  try {
+    const account = await config.rpc.getAccount(txParams.account.accountId());
+
+    const ledgerKey = getLedgerKeyWasmId(wasmHash);
+    const response = await config.rpc.getLedgerEntries(...[ledgerKey]);
+    //const ledgerentries = await getContractCodeLedgerEntry(wasmHash);
+    if (response.entries && response.entries.length > 0 && response.entries[0].liveUntilLedgerSeq) {
+      const expirationLedger = response.entries[0].liveUntilLedgerSeq;
+      console.log('expiration', expirationLedger);
+      const desiredLedgerSeq = response.latestLedger - expirationLedger + 100000;
+      console.log(desiredLedgerSeq, 'desired');
+      const wasmEntry = response.entries[0].key;
+      const transaction = new TransactionBuilder(account, txParams.txBuilderOptions)
+        .setSorobanData(new SorobanDataBuilder().setReadWrite([ledgerKey, wasmEntry]).build())
+        .addOperation(Operation.restoreFootprint({})) // The actual restore operation
+        .build();
+      // Simulate a transaction with a restoration operation to check if it's necessary
+
+      const simResponse: SorobanRpc.Api.SimulateTransactionResponse =
+        await config.rpc.simulateTransaction(transaction);
+      console.log(simResponse);
+      console.log(SorobanRpc.Api.isSimulationSuccess(simResponse));
+      console.log(SorobanRpc.Api.isSimulationRestore(simResponse));
+      // Check if the simulation indicates a need for restoration
+      if (SorobanRpc.Api.isSimulationRestore(simResponse)) {
+        return simResponse as SorobanRpc.Api.SimulateTransactionRestoreResponse;
+      } else {
+        console.log('No restoration needed.');
+        const transaction1 = new TransactionBuilder(account, txParams.txBuilderOptions)
+          .setSorobanData(new SorobanDataBuilder().setReadWrite([ledgerKey]).build())
+          .addOperation(
+            Operation.extendFootprintTtl({
+              extendTo: desiredLedgerSeq,
+            })
+          ) // The actual TTL extension operation
+          .build();
+        console.log(transaction1);
+        const signedXdr = await txParams.signerFunction(transaction1.toXDR());
+        const signedTransaction = new Transaction(signedXdr, config.passphrase);
+        try {
+          // Submit the transaction to the network
+          const response = await config.rpc.sendTransaction(signedTransaction);
+          console.log('ExtendTTL transaction submitted successfully:', response.hash);
+        } catch (error) {
+          console.error('Failed to submit ExtendTTL transaction:', error);
+          throw new Error('ExtendTTL transaction failed');
+        }
+      }
+    } else {
+      console.log('No ledger entry found for the given WASM hash.');
+    }
+  } catch (error) {
+    console.error('Failed to simulate restoration:', error);
+    throw error;
+  }
+  return undefined;
+}
+
 /**
  * Handles the restoration of a Soroban contract.
  * @param {SorobanRpc.Api.SimulateTransactionRestoreResponse} simResponse - The simulation response containing restoration information.
  * @param {TxParams} txParams - The transaction parameters.
  * @returns {Promise<void>} A promise that resolves when the restoration transaction has been submitted.
  */
-async function handleRestoration(
+export async function handleRestoration(
   simResponse: SorobanRpc.Api.SimulateTransactionRestoreResponse,
   txParams: TxParams
 ): Promise<void> {
