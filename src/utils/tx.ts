@@ -47,24 +47,6 @@ export async function signWithKeypair(
 }
 
 /**
- * Simulates a Stellar operation to check for errors before submitting to the network.
- * @param {string} operation - The operation to simulate in base64 XDR format.
- * @param {TxParams} txParams - Transaction parameters including account and builder options.
- * @returns {Promise<SorobanRpc.Api.SimulateTransactionResponse>} The simulation response.
- */
-export async function simulationOperation(
-  operation: string,
-  txParams: TxParams
-): Promise<SorobanRpc.Api.SimulateTransactionResponse> {
-  const txBuilder = new TransactionBuilder(txParams.account, txParams.txBuilderOptions)
-    .addOperation(xdr.Operation.fromXDR(operation, 'base64'))
-    .setTimeout(TimeoutInfinite);
-  const transaction = txBuilder.build();
-  const simulation = await config.rpc.simulateTransaction(transaction);
-  return simulation;
-}
-
-/**
  * Sends a signed Stellar transaction and returns the result after parsing.
  * @template T The type of the expected result.
  * @param {Transaction} transaction - The transaction to send.
@@ -117,44 +99,49 @@ export async function sendTransaction<T>(
 
 /**
  * Simulates a restoration transaction to determine if restoration is needed.
+ * This function first checks the ledger entry for the given WASM hash. If the entry is found and has expired,
+ * it attempts a restoration. If the entry hasn't expired yet but the TTL needs extension, it proceeds with TTL extension.
  * @param wasmHash - The hash of the WASM to check.
- * @param server - The instance of the SorobanRpc Server.
- * @param signer - The Keypair of the account that would sign the transaction.
- * @returns A promise that resolves to a simulation response, indicating whether restoration is needed.
+ * @param txParams - The transaction parameters including account and signer.
+ * @returns A promise that resolves to a simulation response, indicating whether restoration or TTL extension is needed.
  */
 export async function simulateRestorationIfNeeded(
   wasmHash: Buffer,
   txParams: TxParams
-): Promise<SorobanRpc.Api.SimulateTransactionRestoreResponse | undefined> {
+): Promise<SorobanRpc.Api.SimulateTransactionRestoreResponse | string | undefined> {
   try {
     const account = await config.rpc.getAccount(txParams.account.accountId());
-
     const ledgerKey = getLedgerKeyWasmId(wasmHash);
     const response = await config.rpc.getLedgerEntries(...[ledgerKey]);
-    //const ledgerentries = await getContractCodeLedgerEntry(wasmHash);
     if (response.entries && response.entries.length > 0 && response.entries[0].liveUntilLedgerSeq) {
       const expirationLedger = response.entries[0].liveUntilLedgerSeq;
-      console.log('expiration', expirationLedger);
-      const desiredLedgerSeq = response.latestLedger - expirationLedger + 100000;
-      console.log(desiredLedgerSeq, 'desired');
-      const wasmEntry = response.entries[0].key;
-      const transaction = new TransactionBuilder(account, txParams.txBuilderOptions)
-        .setSorobanData(new SorobanDataBuilder().setReadWrite([ledgerKey, wasmEntry]).build())
+      const desiredLedgerSeq = response.latestLedger + 500000;
+      let extendLedgers = desiredLedgerSeq - expirationLedger;
+      if (extendLedgers < 10000) {
+        extendLedgers = 10000;
+      }
+      console.log('Expiration:', expirationLedger);
+      console.log('Desired TTL:', desiredLedgerSeq);
+      const sorobanData = new SorobanDataBuilder().setReadWrite([ledgerKey]).build();
+      const restoreTx = new TransactionBuilder(account, txParams.txBuilderOptions)
+        .setSorobanData(sorobanData)
         .addOperation(Operation.restoreFootprint({})) // The actual restore operation
         .build();
       // Simulate a transaction with a restoration operation to check if it's necessary
 
-      const simResponse: SorobanRpc.Api.SimulateTransactionResponse =
-        await config.rpc.simulateTransaction(transaction);
-      console.log(simResponse);
-      console.log(SorobanRpc.Api.isSimulationSuccess(simResponse));
-      console.log(SorobanRpc.Api.isSimulationRestore(simResponse));
+      const restorationSimulation: SorobanRpc.Api.SimulateTransactionResponse =
+        await config.rpc.simulateTransaction(restoreTx);
+      const restoreNeeded = SorobanRpc.Api.isSimulationRestore(restorationSimulation);
+      const resSimSuccess = SorobanRpc.Api.isSimulationSuccess(restorationSimulation);
+      console.log(`restoration needed: ${restoreNeeded}\nSimulation Success: ${resSimSuccess}`);
       // Check if the simulation indicates a need for restoration
-      if (SorobanRpc.Api.isSimulationRestore(simResponse)) {
-        return simResponse as SorobanRpc.Api.SimulateTransactionRestoreResponse;
+      if (restoreNeeded) {
+        return restorationSimulation as SorobanRpc.Api.SimulateTransactionRestoreResponse;
       } else {
-        console.log('No restoration needed.');
-        const transaction1 = new TransactionBuilder(account, txParams.txBuilderOptions)
+        console.log('No restoration needed., bumping the ttl.');
+        const account1 = await config.rpc.getAccount(txParams.account.accountId());
+
+        const bumpTTLtx = new TransactionBuilder(account1, txParams.txBuilderOptions)
           .setSorobanData(new SorobanDataBuilder().setReadWrite([ledgerKey]).build())
           .addOperation(
             Operation.extendFootprintTtl({
@@ -162,16 +149,23 @@ export async function simulateRestorationIfNeeded(
             })
           ) // The actual TTL extension operation
           .build();
-        console.log(transaction1);
-        const signedXdr = await txParams.signerFunction(transaction1.toXDR());
-        const signedTransaction = new Transaction(signedXdr, config.passphrase);
+        const ttlSimResponse: SorobanRpc.Api.SimulateTransactionResponse =
+          await config.rpc.simulateTransaction(bumpTTLtx);
+        const assembledTx = SorobanRpc.assembleTransaction(bumpTTLtx, ttlSimResponse).build();
+        const signedTx = new Transaction(
+          await txParams.signerFunction(assembledTx.toXDR()),
+          config.passphrase
+        );
+        // submit the assembled and signed transaction to bump it.
         try {
-          // Submit the transaction to the network
-          const response = await config.rpc.sendTransaction(signedTransaction);
-          console.log('ExtendTTL transaction submitted successfully:', response.hash);
+          const response = await sendTransaction(signedTx, (result) => {
+            console.log(`bump ttl for contract result: ${result}`);
+            return result;
+          });
+          return response;
         } catch (error) {
-          console.error('Failed to submit ExtendTTL transaction:', error);
-          throw new Error('ExtendTTL transaction failed');
+          console.error('Transaction submission failed with error:', error);
+          throw error;
         }
       }
     } else {
@@ -196,9 +190,9 @@ export async function handleRestoration(
 ): Promise<void> {
   const restorePreamble = simResponse.restorePreamble;
   console.log('Restoring for account:', txParams.account.accountId());
-
+  const account = await config.rpc.getAccount(txParams.account.accountId());
   // Construct the transaction builder with the necessary parameters
-  const restoreTx = new TransactionBuilder(txParams.account, {
+  const restoreTx = new TransactionBuilder(account, {
     ...txParams.txBuilderOptions,
     fee: restorePreamble.minResourceFee, // Update fee based on the restoration requirement
   })
@@ -206,14 +200,20 @@ export async function handleRestoration(
     .addOperation(Operation.restoreFootprint({})) // Add the RestoreFootprint operation
     .build(); // Build the transaction
 
-  // Sign the transaction using the provided signerFunction
-  const signedXdr = await txParams.signerFunction(restoreTx.toXDR());
-  const signedTransaction = new Transaction(signedXdr, config.passphrase);
+  const simulation: SorobanRpc.Api.SimulateTransactionResponse =
+    await config.rpc.simulateTransaction(restoreTx);
+  const assembledTx = SorobanRpc.assembleTransaction(restoreTx, simulation).build();
+
+  const signedTx = new Transaction(
+    await txParams.signerFunction(assembledTx.toXDR()),
+    config.passphrase
+  );
+
   console.log('Submitting restoration transaction');
 
   try {
     // Submit the transaction to the network
-    const response = await config.rpc.sendTransaction(signedTransaction);
+    const response = await config.rpc.sendTransaction(signedTx);
     console.log('Restoration transaction submitted successfully:', response.hash);
   } catch (error) {
     console.error('Failed to submit restoration transaction:', error);
@@ -262,7 +262,6 @@ export async function invokeSorobanOperation<T>(
     if (restorePreamble && restorePreamble.minResourceFee) {
       console.log(`Minimum resource fee needed: ${restorePreamble.minResourceFee}`);
     }
-
     // Processing the transaction data needed for restoration
     if (restorePreamble && restorePreamble.transactionData) {
       const sorobanDataBuilder = restorePreamble.transactionData;
@@ -288,7 +287,6 @@ export async function invokeSorobanOperation<T>(
       }
     }
     await handleRestoration(simulation, txParams);
-    return invokeSorobanOperation(operation, parser, txParams, sorobanData);
   }
 
   if (SorobanRpc.Api.isSimulationError(simulation)) {

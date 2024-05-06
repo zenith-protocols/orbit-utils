@@ -40,12 +40,14 @@ try {
     console.log(ledgerEntry.entries[0].liveUntilLedgerSeq);
     const expiration = ledgerEntry.entries[0].liveUntilLedgerSeq - ledgerEntry.latestLedger;
     console.log(expiration);
-    if (expiration < 0) {
-      const transactionRestoreResponse = await simulateRestorationIfNeeded(wasmHash, txParams);
-      console.log(transactionRestoreResponse);
-      if (transactionRestoreResponse) {
-        handleRestoration(transactionRestoreResponse, txParams);
-      }
+    const transactionRestoreResponse = await simulateRestorationIfNeeded(wasmHash, txParams);
+    console.log(transactionRestoreResponse);
+    if (transactionRestoreResponse && typeof transactionRestoreResponse != 'string') {
+      console.log('handlling restoration');
+      handleRestoration(transactionRestoreResponse, txParams);
+    }
+    if (typeof transactionRestoreResponse == 'string') {
+      console.log('no restoration needed but ttl extended');
     }
   }
 } catch (error) {
