@@ -291,7 +291,7 @@ export async function invokeSorobanOperation<T>(
 
   if (SorobanRpc.Api.isSimulationError(simulation)) {
     console.log('Simulation error with details:', simulation);
-    throw new Error('Simulation failed with errors');
+    throw new Error(simulation.error);
   }
 
   const assembledTx = SorobanRpc.assembleTransaction(transaction, simulation).build();

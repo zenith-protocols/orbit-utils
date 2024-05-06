@@ -45,12 +45,13 @@ export async function deployAndInitContracts(addressBook: AddressBook) {
   await bumpContractInstance('treasuryFactory', txParams);
 
   const treasuryFactory = new TreasuryFactoryContract(addressBook.getContractId('treasuryFactory'));
+  console.log(treasuryFactory);
 
   const treasuryInitMeta: TreasuryInitMeta = {
     treasury_hash: Buffer.from(addressBook.getWasmHash('treasury'), 'hex'),
     pool_factory: addressBook.getContractId('poolFactory'),
   };
-
+  console.log(treasuryInitMeta);
   console.log(`\n\ninitializing treasury factory`);
   const invokecall = await invokeSorobanOperation(
     treasuryFactory.initialize(Address.fromString(config.admin.publicKey()), treasuryInitMeta),
