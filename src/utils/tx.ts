@@ -7,7 +7,7 @@ import {
   SorobanRpc,
   TimeoutInfinite,
   Transaction,
-  TransactionBuilder,
+  TransactionBuilder,  scValToNative,
   xdr,
 } from '@stellar/stellar-sdk';
 import { config } from './env_config.js';
@@ -251,8 +251,8 @@ export async function invokeSorobanOperation<T>(
   // Simulate the transaction
   const simulation: SorobanRpc.Api.SimulateTransactionResponse =
     await config.rpc.simulateTransaction(transaction);
-  console.log('Simulation events result:', simulation.events);
-  console.log('simulation stringified', JSON.stringify(simulation));
+  //console.log('Simulation events result:', simulation.events);
+  //console.log('simulation stringified', JSON.stringify(simulation));
   // After the simulation check, if restoration is needed
   if (SorobanRpc.Api.isSimulationRestore(simulation)) {
     console.log('Restoration needed for successful simulation.');

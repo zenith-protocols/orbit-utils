@@ -39,37 +39,37 @@ import { setupReserve } from '../blend-pool/reserve-setup.js';
 //const deposit_asset = BigInt(2); // 0=BLND, 1=USDC, 2=Both
 //const blnd_max = BigInt(9_000_000e7);
 //const usdc_max = BigInt(100_000e7);
-const mint_amount = BigInt(50_000e7);
+const mint_amount = BigInt(10_000e7);
 const pool_name = 'OrbitUSD';
-const backstop_take_rate = 0.5e7;
-const max_positions = 2;
+const backstop_take_rate = 0;
+const max_positions = 7;
 const reserves = ['oUSD', 'XLM'];
 const reserve_configs: ReserveConfig[] = [
   {
     index: 0, // Does not matter
     decimals: 7,
-    c_factor: 980_0000,
-    l_factor: 980_0000,
-    util: 900_0000, //must be under 950_0000
-    max_util: 980_0000, //must be greater than util
-    r_base: 50000, // (0_0050000)
-    r_one: 50_0000,
-    r_two: 100_0000,
-    r_three: 1_000_0000,
-    reactivity: 1000, //must be 1000 or under
+    c_factor: 0,
+    l_factor: 1_000_0000,
+    util: 800_0000, //must be under 950_0000
+    max_util: 1_000_0000, //must be greater than util
+    r_base: 100_000, // (0_0050000)
+    r_one: 400_000,
+    r_two: 2_000_000,
+    r_three: 7_500_000,
+    reactivity: 200, //must be 1000 or under
   },
   {
     index: 0,
     decimals: 7,
-    c_factor: 980_0000,
-    l_factor: 980_0000,
-    util: 900_0000,
-    max_util: 980_0000,
-    r_base: 50000, // (0_0050000)
-    r_one: 50_0000,
-    r_two: 100_0000,
-    r_three: 1_000_0000,
-    reactivity: 1000,
+    c_factor: 8_900_000,
+    l_factor: 0,
+    util: 0,
+    max_util: 0,
+    r_base: 100_000, // (0_0050000)
+    r_one: 400_000,
+    r_two: 2_000_000,
+    r_three: 7_500_000,
+    reactivity: 200,
   },
 ];
 const poolEmissionMetadata: ReserveEmissionMetadata[] = [
@@ -105,30 +105,38 @@ const txParams: TxParams = {
 };
 
 async function deploy() {
+  console.warn('in the deploy script');
   // Initialize Contracts
   const poolFactory = new PoolFactoryContract(addressBook.getContractId('poolFactory'));
+  console.warn(`poolFactory ${poolFactory}`);
   const backstop = new BackstopContract(addressBook.getContractId('backstop'));
   //const comet = new CometClient(addressBook.getContractId('comet'));
 
   const treasuryFactory = new TreasuryFactoryContract(addressBook.getContractId('treasuryFactory'));
-  const bridgeOracle = new BridgeOracleContract(addressBook.getContractId('bridgeOracle'));
+  console.warn(`treasuryFactory ${treasuryFactory}`);
 
   //Deploy bridge oracle and token
 
-  const oUSD = new Asset('oUSD', config.admin.publicKey());
+  //const oUSD = new Asset('oUSD', config.admin.publicKey());
+  //console.warn('ousd', oUSD);
 
-  await tryDeployStellarAsset(oUSD, txParams);
+  //const oUSDasset = await tryDeployStellarAsset(oUSD, txParams);
+  //console.warn(oUSDasset.address);
+  //await addressBook.setContractId('oUSD', oUSDasset.address.toString());
 
-  await bumpContractInstance('oUSD', txParams);
-  await bumpContractInstance('bridgeOracle', txParams);
+  //await bumpContractInstance('oUSD', txParams);
   const bridgeOracleId = await deployContract('bridgeOracle', 'bridgeOracle', txParams);
+  await bumpContractInstance('bridgeOracle', txParams);
+  const bridgeOracle = new BridgeOracleContract(bridgeOracleId);
+
   console.log('bridge oracle deployed: ' + bridgeOracleId);
 
-  await bridgeOracle.initialize(
+  const bridgeOracleThing = await bridgeOracle.initialize(
     new Address(addressBook.getContractId('oUSD')),
     new Address(addressBook.getContractId('USDC')),
     new Address(addressBook.getContractId('oracle'))
   );
+  console.warn(bridgeOracleThing);
   // mint lp with blnd
   // if (mint_amount > 0) {
   //   if (deposit_asset == BigInt(0)) {
@@ -159,11 +167,12 @@ async function deploy() {
   // }
 
   // Update token value
-  await invokeSorobanOperation(
+  const updateToken = await invokeSorobanOperation(
     backstop.updateTokenValue(),
     BackstopContract.parsers.updateTknVal,
     txParams
   );
+  console.warn(updateToken);
   //********** Stellar Pool (XLM, USDC) **********//
 
   console.log('Deploy Pool');
@@ -211,11 +220,7 @@ async function deploy() {
 
   const tokenContract = new TokenContract(addressBook.getContractId('oUSD'));
   // set the admin on the token to the treasury
-  await invokeSorobanOperation(
-    await tokenContract.set_admin(treasuryId),
-    () => undefined,
-    txParams
-  );
+  await invokeSorobanOperation(tokenContract.set_admin(treasuryId), () => undefined, txParams);
 
   console.log('Setup pool reserves and emissions');
 

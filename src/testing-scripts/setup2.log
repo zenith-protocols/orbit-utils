@@ -1,0 +1,183 @@
+Start funding
+GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2  already funded
+Installing Orbit Contracts
+retrieved a ledger key for wasm id 5a6ee8a8c3e1649eb9ed9bbc9b9dcbf0ff914660b354142951ead7a1605923f6
+
+
+Uploading contract WASM for treasuryFactory
+invoking soroban operation
+1 response.entries and 1 entries
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710286 ] }
+}
+Transaction built with sequence number: 6074900527710287
+passphrase: Test SDF Network ; September 2015,sourceAcct: function publicKey() {
+      return _strkey.StrKey.encodeEd25519PublicKey(this._publicKey);
+    }
+txhash in signer: 6f1c6a4ee2d22c447fd0ab4d45c89456c9b29fa6076a8fa3f57fe09415c37cb0
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 6f1c6a4ee2d22c447fd0ab4d45c89456c9b29fa6076a8fa3f57fe09415c37cb0 Result: undefined
+Contract installed with hash: 5a6ee8a8c3e1649eb9ed9bbc9b9dcbf0ff914660b354142951ead7a1605923f6
+
+
+Bumping the contract code for WASM hash associated with key: treasuryFactory
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710287 ] }
+}
+Transaction built with sequence number: 6074900527710288
+passphrase: Test SDF Network ; September 2015,sourceAcct: function publicKey() {
+      return _strkey.StrKey.encodeEd25519PublicKey(this._publicKey);
+    }
+txhash in signer: 2a118962bae319d578f3266a5d9e384b3e6dbae209d39146b242d69f880381c6
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 2a118962bae319d578f3266a5d9e384b3e6dbae209d39146b242d69f880381c6 Result: undefined
+retrieved a ledger key for wasm id bd178b0e46253678975fbd3477e3111555cfa728d1da5f078350ebd63a3964e6
+
+
+Uploading contract WASM for treasury
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710288 ] }
+}
+Transaction built with sequence number: 6074900527710289
+1 response.entries and 1 entries
+passphrase: Test SDF Network ; September 2015,sourceAcct: function publicKey() {
+      return _strkey.StrKey.encodeEd25519PublicKey(this._publicKey);
+    }
+txhash in signer: a643a2727cd87afead47e83e1549b26e796d0c030feefcbe935e96e3d3137b93
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: a643a2727cd87afead47e83e1549b26e796d0c030feefcbe935e96e3d3137b93 Result: undefined
+Contract installed with hash: bd178b0e46253678975fbd3477e3111555cfa728d1da5f078350ebd63a3964e6
+
+
+Bumping the contract code for WASM hash associated with key: treasury
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710289 ] }
+}
+Transaction built with sequence number: 6074900527710290
+passphrase: Test SDF Network ; September 2015,sourceAcct: function publicKey() {
+      return _strkey.StrKey.encodeEd25519PublicKey(this._publicKey);
+    }
+txhash in signer: 1a85545e636dc545b324ef2e341e0142373da46e268cd98b92c26aa5d0b6b425
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 1a85545e636dc545b324ef2e341e0142373da46e268cd98b92c26aa5d0b6b425 Result: undefined
+retrieved a ledger key for wasm id 45ea004a14afdf0a76bd35a7fc6c0334e1b53238ceff709a8948ba6163a609d4
+
+
+Uploading contract WASM for bridgeOracle
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710290 ] }
+}
+Transaction built with sequence number: 6074900527710291
+1 response.entries and 1 entries
+passphrase: Test SDF Network ; September 2015,sourceAcct: function publicKey() {
+      return _strkey.StrKey.encodeEd25519PublicKey(this._publicKey);
+    }
+txhash in signer: 793651212a23ed00d2a4ca390d0c5159c2a953b99dd8ed2610ac3084d65bcfde
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 793651212a23ed00d2a4ca390d0c5159c2a953b99dd8ed2610ac3084d65bcfde Result: undefined
+Contract installed with hash: 45ea004a14afdf0a76bd35a7fc6c0334e1b53238ceff709a8948ba6163a609d4
+
+
+Bumping the contract code for WASM hash associated with key: bridgeOracle
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710291 ] }
+}
+Transaction built with sequence number: 6074900527710292
+passphrase: Test SDF Network ; September 2015,sourceAcct: function publicKey() {
+      return _strkey.StrKey.encodeEd25519PublicKey(this._publicKey);
+    }
+txhash in signer: cf0c64e2fe008b0a84997357915ccc0f616583f46626b46bb4cce004b64dd8c1
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: cf0c64e2fe008b0a84997357915ccc0f616583f46626b46bb4cce004b64dd8c1 Result: undefined
+Deploying and Initializing Orbit
+set the id CBYQCAQYKYMYTYKTNMBSXSBOX6YTRVERXAIMXEAOAWSTITDHEMI6QESR
+set thewasmhash <Buffer 5a 6e e8 a8 c3 e1 64 9e b9 ed 9b bc 9b 9d cb f0 ff 91 46 60 b3 54 14 29 51 ea d7 a1 60 59 23 f6>
+
+
+Deploying contract treasuryFactory with ID CBYQCAQYKYMYTYKTNMBSXSBOX6YTRVERXAIMXEAOAWSTITDHEMI6QESR
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710292 ] }
+}
+Transaction built with sequence number: 6074900527710293
+passphrase: Test SDF Network ; September 2015,sourceAcct: function publicKey() {
+      return _strkey.StrKey.encodeEd25519PublicKey(this._publicKey);
+    }
+txhash in signer: 1a8764cde2b6d546915fda9502c24fc3495c01f3e74f8f11be590998469afc06
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 1a8764cde2b6d546915fda9502c24fc3495c01f3e74f8f11be590998469afc06 Result: undefined
+
+
+Bumping the contract instance for treasuryFactory
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710293 ] }
+}
+Transaction built with sequence number: 6074900527710294
+passphrase: Test SDF Network ; September 2015,sourceAcct: function publicKey() {
+      return _strkey.StrKey.encodeEd25519PublicKey(this._publicKey);
+    }
+txhash in signer: ac85286b1ad43dc885af6563961a28a5fb91b578166423b3c0bbc51c24b96332
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: ac85286b1ad43dc885af6563961a28a5fb91b578166423b3c0bbc51c24b96332 Result: undefined
+TreasuryFactoryContract {
+  _id: <Buffer 71 01 02 18 56 19 89 e1 53 6b 03 2b c8 2e bf b1 38 d4 91 b8 10 cb 90 0e 05 a5 34 4c 67 23 11 e8>
+}
+{
+  treasury_hash: <Buffer bd 17 8b 0e 46 25 36 78 97 5f bd 34 77 e3 11 15 55 cf a7 28 d1 da 5f 07 83 50 eb d6 3a 39 64 e6>,
+  pool_factory: 'CCSBJVBJSQVRFHDW5ZY4LONANJHFKNH4MU5G2QQFJERVUEQY7AGF227M'
+}
+
+
+initializing treasury factory
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710294 ] }
+}
+Transaction built with sequence number: 6074900527710295
+passphrase: Test SDF Network ; September 2015,sourceAcct: function publicKey() {
+      return _strkey.StrKey.encodeEd25519PublicKey(this._publicKey);
+    }
+txhash in signer: d0c641704c2d7819051e92ce588ea411cf0f07663699b46f9c9de219236718d3
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: d0c641704c2d7819051e92ce588ea411cf0f07663699b46f9c9de219236718d3 Result: null
+null
+
+
+Bumping the contract instance for treasuryFactory
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710295 ] }
+}
+Transaction built with sequence number: 6074900527710296
+passphrase: Test SDF Network ; September 2015,sourceAcct: function publicKey() {
+      return _strkey.StrKey.encodeEd25519PublicKey(this._publicKey);
+    }
+txhash in signer: 81834abaf30960dee4ea68dd52626700148bd38823087404e514616417a59774
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 81834abaf30960dee4ea68dd52626700148bd38823087404e514616417a59774 Result: undefined

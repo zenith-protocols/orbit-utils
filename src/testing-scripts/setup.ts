@@ -1,3 +1,5 @@
+/*
+
 import {
   BackstopContract,
   EmitterContract,
@@ -35,6 +37,16 @@ export async function deployAndInitContracts(addressBook: AddressBook) {
     },
   };
   await airdropAccount(config.admin);
+  await airdropAccount(config.USDCISSUER);
+  await airdropAccount(config.EUROCISSUER);
+  await airdropAccount(config.WBTCISSUER);
+  await airdropAccount(config.FBLNDISSUER);
+  await airdropAccount(config.USDCWHALE);
+  await airdropAccount(config.XLMWHALE);
+  await airdropAccount(config.EUROCWHALE);
+  await airdropAccount(config.FBLNDWHALE);
+  await airdropAccount(config.USER1);
+  await airdropAccount(config.USER2);
 
   await installContract('emitter', txParams);
   await bumpContractCode('emitter', txParams);
@@ -135,3 +147,4 @@ const addressBook = AddressBook.loadFromFile(network);
 
 await deployAndInitContracts(addressBook);
 addressBook.writeToFile();
+*/

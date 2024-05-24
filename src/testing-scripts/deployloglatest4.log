@@ -1,0 +1,29 @@
+set the id CDF2R2PEJUH54LDRHQJTTDM6YEIDIYH3OF6KHBXPS2SOPGJ5B5KZN5I3
+set thewasmhash <Buffer 45 ea 00 4a 14 af df 0a 76 bd 35 a7 fc 6c 03 34 e1 b5 32 38 ce ff 70 9a 89 48 ba 61 63 a6 09 d4>
+
+
+Deploying contract bridgeOracle with ID CDF2R2PEJUH54LDRHQJTTDM6YEIDIYH3OF6KHBXPS2SOPGJ5B5KZN5I3
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710277 ] }
+}
+Transaction built with sequence number: 6074900527710278
+txhash in signer: a1464852568eec84f1c5fbe858f606e99905d0c4248a54080f719770037acc72
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: a1464852568eec84f1c5fbe858f606e99905d0c4248a54080f719770037acc72 Result: undefined
+
+
+Bumping the contract instance for bridgeOracle
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710278 ] }
+}
+Transaction built with sequence number: 6074900527710279
+txhash in signer: 27e921ed5e1b5071072e068f145985174e16956dd1e77e7d7910dce4529f476e
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 27e921ed5e1b5071072e068f145985174e16956dd1e77e7d7910dce4529f476e Result: undefined
+bridge oracle deployed: CDF2R2PEJUH54LDRHQJTTDM6YEIDIYH3OF6KHBXPS2SOPGJ5B5KZN5I3

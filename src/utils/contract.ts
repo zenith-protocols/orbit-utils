@@ -149,7 +149,9 @@ export async function deployContract(
   );
   const contractId = StrKey.encodeContract(hash(hashIdPreimage.toXDR()));
   addressBook.setContractId(contractKey, contractId);
+  console.log('set the id', contractId);
   const wasmHash = Buffer.from(addressBook.getWasmHash(wasmKey), 'hex');
+  console.log('set thewasmhash', wasmHash);
 
   const deployFunction = xdr.HostFunction.hostFunctionTypeCreateContract(
     new xdr.CreateContractArgs({

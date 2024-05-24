@@ -41,10 +41,15 @@ export async function deployAndInitContracts(addressBook: AddressBook) {
   await bumpContractCode('bridgeOracle', txParams);
 
   console.log('Deploying and Initializing Orbit');
-  await deployContract('treasuryFactory', 'treasuryFactory', txParams);
-  await bumpContractInstance('treasuryFactory', txParams);
+  const treasuryfactoryAddress = await deployContract(
+    'treasuryFactory',
+    'treasuryFactory',
+    txParams
+  );
 
-  const treasuryFactory = new TreasuryFactoryContract(addressBook.getContractId('treasuryFactory'));
+  await bumpContractInstance('treasuryFactory', txParams);
+  const treasuryFactory = new TreasuryFactoryContract(treasuryfactoryAddress);
+
   console.log(treasuryFactory);
 
   const treasuryInitMeta: TreasuryInitMeta = {

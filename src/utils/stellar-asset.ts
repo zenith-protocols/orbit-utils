@@ -35,9 +35,10 @@ export async function deployStellarAsset(asset: Asset, txParams: TxParams): Prom
   });
   await invokeSorobanOperation(deployOp.toXDR('base64'), () => undefined, txParams);
   addressBook.setContractId(asset.code, contractId);
+  console.warn(asset.code, contractId);
   addressBook.writeToFile();
   await bumpContractInstance(asset.code, txParams);
-  console.log(
+  console.warn(
     `Successfully deployed Stellar asset contract for 
     ${asset.code} with Contract ID: ${contractId}\n 
     ${JSON.stringify(asset)}`
@@ -58,7 +59,7 @@ export async function tryDeployStellarAsset(
   try {
     return await deployStellarAsset(asset, txParams);
   } catch (e) {
-    console.log(`Asset ${asset.code} already deployed or deployment failed, error: `, e);
+    console.warn(`Asset ${asset.code} already deployed or deployment failed, error: `, e);
     txParams.account = new Account(
       txParams.account.accountId(),
       (parseInt(txParams.account.sequenceNumber()) - 1).toString()

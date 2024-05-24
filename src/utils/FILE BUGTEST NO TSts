@@ -1,3 +1,4 @@
+/*
 import { SorobanRpc, TransactionBuilder, xdr } from '@stellar/stellar-sdk';
 import { addressBook } from '../utils/address-book.js';
 import { lookupContract, lookupContractHash } from '../utils/contract.js';
@@ -35,6 +36,18 @@ try {
   const ledgerEntry = await testLedgerKeyStuff('comet');
   const wasmHash = await lookupContractHash('comet');
   if (ledgerEntry != undefined && ledgerEntry.entries[0].liveUntilLedgerSeq) {
+    //  const simulated = config.rpc.simulateTransaction(xdr);
+    //console.log;
+    const contractInstanceKey = xdr.LedgerKey.contractData(
+      new xdr.LedgerKeyContractData({
+        contract: contractAddress,
+        key: xdr.ScVal.scvLedgerKeyContractInstance(),
+        durability: xdr.ContractDataDurability.persistent(),
+      })
+    );
+
+    const response = await config.rpc.getLedgerEntries(contractInstanceKey);
+    console.log(response);
     const parsedEntry = parseLedgerEntry(ledgerEntry.entries[0]);
     console.log(ledgerEntry.latestLedger);
     console.log(ledgerEntry.entries[0].liveUntilLedgerSeq);

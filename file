@@ -1,0 +1,55 @@
+
+]
+simulation stringified {"_parsed":true,"latestLedger":1759090,"events":[{"_attributes":{"inSuccessfulContractCall":true,"event":{"_attributes":{"ext":{"_switch":0},"type":{"name":"diagnostic","value":2},"body":{"_switch":0,"_arm":"v0","_value":{"_attributes":{"topics":[{"_switch":{"name":"scvSymbol","value":15},"_arm":"sym","_armType":{"_maxLength":32},"_value":{"type":"Buffer","data":[102,110,95,99,97,108,108]}},{"_switch":{"name":"scvBytes","value":13},"_arm":"bytes","_armType":{"_maxLength":4294967295},"_value":{"type":"Buffer","data":[116,134,143,240,23,105,203,178,43,129,188,46,6,188,214,122,20,24,248,176,11,120,249,68,147,44,39,78,177,79,189,126]}},{"_switch":{"name":"scvSymbol","value":15},"_arm":"sym","_armType":{"_maxLength":32},"_value":{"type":"Buffer","data":[105,110,105,116,95,97,115,115,101,116]}}],"data":{"_switch":{"name":"scvBytes","value":13},"_arm":"bytes","_armType":{"_maxLength":4294967295},"_value":{"type":"Buffer","data":[0,0,0,1,111,85,83,68,0,0,0,0,202,115,89,50,203,57,15,49,75,64,182,57,68,0,4,195,241,189,122,162,180,61,5,143,100,116,194,49,195,159,92,186]}}}}}}}}},{"_attributes":{"inSuccessfulContractCall":true,"event":{"_attributes":{"ext":{"_switch":0},"contractId":{"type":"Buffer","data":[116,134,143,240,23,105,203,178,43,129,188,46,6,188,214,122,20,24,248,176,11,120,249,68,147,44,39,78,177,79,189,126]},"type":{"name":"diagnostic","value":2},"body":{"_switch":0,"_arm":"v0","_value":{"_attributes":{"topics":[{"_switch":{"name":"scvSymbol","value":15},"_arm":"sym","_armType":{"_maxLength":32},"_value":{"type":"Buffer","data":[102,110,95,114,101,116,117,114,110]}},{"_switch":{"name":"scvSymbol","value":15},"_arm":"sym","_armType":{"_maxLength":32},"_value":{"type":"Buffer","data":[105,110,105,116,95,97,115,115,101,116]}}],"data":{"_switch":{"name":"scvVoid","value":1}}}}}}}}}],"transactionData":{"_data":{"_attributes":{"ext":{"_switch":0},"resources":{"_attributes":{"footprint":{"_attributes":{"readOnly":[],"readWrite":[{"_switch":{"name":"contractData","value":6},"_arm":"contractData","_value":{"_attributes":{"contract":{"_switch":{"name":"scAddressTypeContract","value":1},"_arm":"contractId","_armType":{"_length":32},"_value":{"type":"Buffer","data":[116,134,143,240,23,105,203,178,43,129,188,46,6,188,214,122,20,24,248,176,11,120,249,68,147,44,39,78,177,79,189,126]}},"key":{"_switch":{"name":"scvLedgerKeyContractInstance","value":20}},"durability":{"name":"persistent","value":1}}}}]}},"instructions":175285,"readBytes":0,"writeBytes":476}},"resourceFee":{"_value":"15964427"}}}},"minResourceFee":"15964427","cost":{"cpuInsns":"125285","memBytes":"35460"},"result":{"auth":[],"retval":{"_switch":{"name":"scvAddress","value":18},"_arm":"address","_value":{"_switch":{"name":"scAddressTypeContract","value":1},"_arm":"contractId","_armType":{"_length":32},"_value":{"type":"Buffer","data":[116,134,143,240,23,105,203,178,43,129,188,46,6,188,214,122,20,24,248,176,11,120,249,68,147,44,39,78,177,79,189,126]}}}}}
+txhash in signer: e57a02198456efb3d640c85949ff04c25d7039ed4a09d538a66d8ae4fade655a
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: e57a02198456efb3d640c85949ff04c25d7039ed4a09d538a66d8ae4fade655a Result: undefined
+
+
+Bumping the contract instance for oUSD
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710226 ] }
+}
+Transaction built with sequence number: 6074900527710227
+Simulation events result: []
+simulation stringified {"_parsed":true,"latestLedger":1759092,"events":[],"transactionData":{"_data":{"_attributes":{"ext":{"_switch":0},"resources":{"_attributes":{"footprint":{"_attributes":{"readOnly":[],"readWrite":[]}},"instructions":0,"readBytes":0,"writeBytes":0}},"resourceFee":{"_value":"46753"}}}},"minResourceFee":"46753","cost":{"cpuInsns":"0","memBytes":"0"}}
+txhash in signer: 3842987a14c10f0af2ce4dd6f07cbb4a30f66621dcaaf6a2c79fa3a88046c027
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 3842987a14c10f0af2ce4dd6f07cbb4a30f66621dcaaf6a2c79fa3a88046c027 Result: undefined
+Successfully deployed Stellar asset contract for
+    oUSD with Contract ID: CB2IND7QC5U4XMRLQG6C4BV42Z5BIGHYWAFXR6KESMWCOTVRJ66X54N5
+
+    {"code":"oUSD","issuer":"GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2"}
+
+
+Bumping the contract instance for oUSD
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710227 ] }
+}
+Transaction built with sequence number: 6074900527710228
+Simulation events result: []
+simulation stringified {"_parsed":true,"latestLedger":1759093,"events":[],"transactionData":{"_data":{"_attributes":{"ext":{"_switch":0},"resources":{"_attributes":{"footprint":{"_attributes":{"readOnly":[],"readWrite":[]}},"instructions":0,"readBytes":0,"writeBytes":0}},"resourceFee":{"_value":"46753"}}}},"minResourceFee":"46753","cost":{"cpuInsns":"0","memBytes":"0"}}
+txhash in signer: 8d98d20a83ce2fcc1ed77715255a0a3bf52e289ddebd63799cf476e04f26e542
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 8d98d20a83ce2fcc1ed77715255a0a3bf52e289ddebd63799cf476e04f26e542 Result: undefined
+
+
+Bumping the contract instance for bridgeOracle
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710228 ] }
+}
+Transaction built with sequence number: 6074900527710229
+Simulation events result: []
+simulation stringified {"_parsed":true,"latestLedger":1759094,"events":[],"transactionData":{"_data":{"_attributes":{"ext":{"_switch":0},"resources":{"_attributes":{"footprint":{"_attributes":{"readOnly":[],"readWrite":[]}},"instructions":0,"readBytes":0,"writeBytes":0}},"resourceFee":{"_value":"46753"}}}},"minResourceFee":"46753","cost":{"cpuInsns":"0","memBytes":"0"}}
+txhash in signer: 7eeff53333b0014e4f899aee3f0cfb93eb03769fe4166a1807220268821cb4af
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true

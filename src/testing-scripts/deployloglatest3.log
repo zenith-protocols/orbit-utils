@@ -1,0 +1,59 @@
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710275 ] }
+}
+Transaction built with sequence number: 6074900527710276
+Simulation error with details: {
+  _parsed: true,
+  id: undefined,
+  latestLedger: 1760931,
+  events: [ ChildStruct { _attributes: [Object] } ],
+  error: 'HostError: Error(Storage, ExistingValue)\n' +
+    '\n' +
+    'Event log (newest first):\n' +
+    '   0: [Diagnostic Event] topics:[error, Error(Storage, ExistingValue)], data:["contract already exists", Bytes(74868ff01769cbb22b81bc2e06bcd67a1418f8b00b78f944932c274eb14fbd7e)]\n' +
+    '\n' +
+    'Backtrace (newest first):\n' +
+    '   0: soroban_env_host::host::lifecycle::<impl soroban_env_host::host::Host>::create_contract_with_optional_auth\n' +
+    '   1: soroban_env_host::host::lifecycle::<impl soroban_env_host::host::Host>::create_contract_internal\n' +
+    '   2: soroban_env_host::host::frame::<impl soroban_env_host::host::Host>::invoke_function_and_return_val::{{closure}}\n' +
+    '   3: soroban_env_host::host::frame::<impl soroban_env_host::host::Host>::invoke_function\n' +
+    '   4: soroban_env_host::e2e_invoke::invoke_host_function_in_recording_mode\n' +
+    '   5: soroban_simulation::simulation::simulate_invoke_host_function_op\n' +
+    '   6: preflight::preflight_invoke_hf_op::{{closure}}\n' +
+    '   7: core::ops::function::FnOnce::call_once{{vtable.shim}}\n' +
+    '   8: preflight::catch_preflight_panic\n' +
+    '   9: _cgo_f11f55888060_Cfunc_preflight_invoke_hf_op\n' +
+    '             at tmp/go-build/cgo-gcc-prolog:105:11\n' +
+    '  10: runtime.asmcgocall\n' +
+    '             at ./runtime/asm_amd64.s:918\n' +
+    '\n'
+}
+Asset oUSD already deployed or deployment failed, error:  Error: HostError: Error(Storage, ExistingValue)
+
+Event log (newest first):
+   0: [Diagnostic Event] topics:[error, Error(Storage, ExistingValue)], data:["contract already exists", Bytes(74868ff01769cbb22b81bc2e06bcd67a1418f8b00b78f944932c274eb14fbd7e)]
+
+Backtrace (newest first):
+   0: soroban_env_host::host::lifecycle::<impl soroban_env_host::host::Host>::create_contract_with_optional_auth
+   1: soroban_env_host::host::lifecycle::<impl soroban_env_host::host::Host>::create_contract_internal
+   2: soroban_env_host::host::frame::<impl soroban_env_host::host::Host>::invoke_function_and_return_val::{{closure}}
+   3: soroban_env_host::host::frame::<impl soroban_env_host::host::Host>::invoke_function
+   4: soroban_env_host::e2e_invoke::invoke_host_function_in_recording_mode
+   5: soroban_simulation::simulation::simulate_invoke_host_function_op
+   6: preflight::preflight_invoke_hf_op::{{closure}}
+   7: core::ops::function::FnOnce::call_once{{vtable.shim}}
+   8: preflight::catch_preflight_panic
+   9: _cgo_f11f55888060_Cfunc_preflight_invoke_hf_op
+             at tmp/go-build/cgo-gcc-prolog:105:11
+  10: runtime.asmcgocall
+             at ./runtime/asm_amd64.s:918
+
+
+    at invokeSorobanOperation (file:///D:/orbit-utils/orbit-utils/lib/utils/tx.js:231:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async deployStellarAsset (file:///D:/orbit-utils/orbit-utils/lib/utils/stellar-asset.js:29:5)
+    at async tryDeployStellarAsset (file:///D:/orbit-utils/orbit-utils/lib/utils/stellar-asset.js:46:16)
+    at async deploy (file:///D:/orbit-utils/orbit-utils/lib/user-scripts/deploy-treasury-pool.js:93:23)
+    at async file:///D:/orbit-utils/orbit-utils/lib/user-scripts/deploy-treasury-pool.js:222:1
