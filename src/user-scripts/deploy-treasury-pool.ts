@@ -206,11 +206,7 @@ async function deploy() {
   const treasurySalt = randomBytes(32);
 
   const treasuryId = await invokeSorobanOperation(
-    treasuryFactory.deploy(
-      treasurySalt,
-      new Address(addressBook.getContractId('oUSD')),
-      new Address(poolAddress as string)
-    ),
+    treasuryFactory.deploy(treasurySalt, addressBook.getContractId('oUSD'), poolAddress as string),
     TreasuryFactoryContract.parsers.deploy,
     txParams
   );
@@ -222,7 +218,8 @@ async function deploy() {
   // set the admin on the token to the treasury
   await invokeSorobanOperation(tokenContract.set_admin(treasuryId), () => undefined, txParams);
 
-  console.log('Setup pool reserves and emissions');
+  console.warn('Setup pool reserves and emissions\n');
+  console.log('Setup pool reserves and emissions\n');
 
   for (let i = 0; i < reserves.length; i++) {
     const reserve_name = reserves[i];
@@ -243,6 +240,8 @@ async function deploy() {
     txParams
   );
   if (mint_amount > 0) {
+    console.warn('Setup backstop for xlm pool\n');
+
     console.log('Setup backstop for Stellar pool\n');
     await invokeSorobanOperation(
       backstop.deposit({
@@ -275,6 +274,7 @@ async function deploy() {
 
   if (revokeAdmin) {
     console.log('Revoking Admin\n');
+    console.warn('revoking admin');
     const newAdmin = config.getUser('PROPOSER');
     if (network != 'mainnet') {
       await airdropAccount(newAdmin);

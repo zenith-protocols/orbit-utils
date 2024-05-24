@@ -1,0 +1,86 @@
+set the id CBYY5NUQA2ECJLTEHS3SDR6KLD4O5L5TQ63QJLDJD6UADEFD2HXTFP73
+set thewasmhash <Buffer 45 ea 00 4a 14 af df 0a 76 bd 35 a7 fc 6c 03 34 e1 b5 32 38 ce ff 70 9a 89 48 ba 61 63 a6 09 d4>
+
+
+Deploying contract bridgeOracle with ID CBYY5NUQA2ECJLTEHS3SDR6KLD4O5L5TQ63QJLDJD6UADEFD2HXTFP73
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710312 ] }
+}
+Transaction built with sequence number: 6074900527710313
+txhash in signer: 629667c2792440cedd7e14de61ee38b5db77a229174dd3b02a84e7dd5ffd0a94
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 629667c2792440cedd7e14de61ee38b5db77a229174dd3b02a84e7dd5ffd0a94 Result: undefined
+
+
+Bumping the contract instance for bridgeOracle
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710313 ] }
+}
+Transaction built with sequence number: 6074900527710314
+txhash in signer: ae2d684fc736d73544e2063b8ab369b3eca17c8f80c5fae38fdb24f3bc61dac6
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: ae2d684fc736d73544e2063b8ab369b3eca17c8f80c5fae38fdb24f3bc61dac6 Result: undefined
+bridge oracle deployed: CBYY5NUQA2ECJLTEHS3SDR6KLD4O5L5TQ63QJLDJD6UADEFD2HXTFP73
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710314 ] }
+}
+Transaction built with sequence number: 6074900527710315
+txhash in signer: 082421f5d7d4cdfa6196a2b62a0a269fe3cf88781b7b58e6f2c0a48b91dddc1e
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 082421f5d7d4cdfa6196a2b62a0a269fe3cf88781b7b58e6f2c0a48b91dddc1e Result: [ 78624535n, 6562377n ]
+Deploy Pool
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710315 ] }
+}
+Transaction built with sequence number: 6074900527710316
+txhash in signer: 9286ad1b9f8efa0c331e6e143816fc25a9d353e77604c3b8b28304d0149057b1
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 9286ad1b9f8efa0c331e6e143816fc25a9d353e77604c3b8b28304d0149057b1 Result: CA3GO2PZEQPYVSDIRZRJIWARWYATKEE5AXPXLMVWFKSRAGA7CAFICP4N
+
+
+Bumping the contract instance for OrbitUSD
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710316 ] }
+}
+Transaction built with sequence number: 6074900527710317
+txhash in signer: f6f73027d3ff057c18a8b771bdd06308178a0e9d0fd5dbfb5cde476734801134
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: f6f73027d3ff057c18a8b771bdd06308178a0e9d0fd5dbfb5cde476734801134 Result: undefined
+Successfully deployed OrbitUSD pool.
+
+Deploy Treasury
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710317 ] }
+}
+Transaction built with sequence number: 6074900527710318
+txhash in signer: 3b42f6a527b9ba65f112da8117915c4ac76353deaa4b667313dfc00405beaeac
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction successfully submitted with hash: 3b42f6a527b9ba65f112da8117915c4ac76353deaa4b667313dfc00405beaeac Result: CAA5XGO2AYGAT37V2UR7QF55Q2C4CWLEPUYTLYEGEAFL7BJDZAYQQPU2
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710318 ] }
+}
+Transaction built with sequence number: 6074900527710319
+txhash in signer: 6861e0e2b42ee2616b21d1a6e1742a3709c6502645092777185485237d984cd3
+Was it signed in the signer function? true
+Is transaction correctly signed by source? true
+Transaction failed: FAILED

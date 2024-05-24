@@ -108,18 +108,21 @@ export class TreasuryFactoryContract extends Contract {
   static readonly parsers = {
     initialize: (result: string) =>
       TreasuryFactoryContract.spec.funcResToNative('initialize', result),
-    deploy: (result: string) => TreasuryFactoryContract.spec.funcResToNative('deploy', result),
+    deploy: (result: string) => {
+      console.log('deploy being parsed', result);
+      return TreasuryFactoryContract.spec.funcResToNative('deploy', result);
+    },
     setAdmin: (result: string) => TreasuryFactoryContract.spec.funcResToNative('set_admin', result),
     isTreasury: (result: string) =>
       TreasuryFactoryContract.spec.funcResToNative('is_treasury', result),
   };
   /**
    * Initializes the treasury factory.
-   * @param {Address} admin - The address of the admin initializing the factory.
+   * @param {string} admin - The address of the admin initializing the factory.
    * @param {TreasuryInitMeta} treasury_init_meta - Metadata for initialization.
    * @returns {string} The transaction ID in base64 encoding.
    */
-  initialize(admin: Address, treasury_init_meta: TreasuryInitMeta): string {
+  initialize(admin: string, treasury_init_meta: TreasuryInitMeta): string {
     const invokeArgs = TreasuryFactoryContract.spec.funcArgsToScVals('initialize', {
       admin,
       treasury_init_meta,
@@ -131,27 +134,31 @@ export class TreasuryFactoryContract extends Contract {
   /**
    * Deploys a new treasury.
    * @param {Buffer} salt - The salt for deployment.
-   * @param {Address} token_address - The token address.
-   * @param {Address} blend_pool - The blend pool address.
+   * @param {string} token_address - The token contract address.
+   * @param {string} blend_pool - The blend pool contract address.
    * @returns {string} The transaction ID in base64 encoding.
    */
-  deploy(salt: Buffer, token_address: Address, blend_pool: Address): string {
-    const invokeArgs = TreasuryFactoryContract.spec.funcArgsToScVals('deploy', {
-      salt,
-      token_address,
-      blend_pool,
-    });
-    const operation = this.call('deploy', ...invokeArgs);
-    return operation.toXDR('base64');
+  deploy(salt: Buffer, token_address: string, blend_pool: string): string {
+    const invokeArgs = {
+      method: 'deploy',
+      args: [
+        ((i) => xdr.ScVal.scvBytes(i))(salt),
+        ((i) => Address.fromString(i).toScVal())(token_address),
+        ((i) => Address.fromString(i).toScVal())(blend_pool),
+      ],
+    };
+    return this.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
   /**
    * Sets the new admin for the treasury.
    * @param {Address} new_admin - The address of the new admin.
    * @returns {string} The transaction ID in base64 encoding.
    */
-  setAdmin(new_admin: Address): string {
-    const invokeArgs = TreasuryFactoryContract.spec.funcArgsToScVals('set_admin', { new_admin });
-    const operation = this.call('set_admin', ...invokeArgs);
-    return operation.toXDR('base64');
+  setAdmin(new_admin: string): string {
+    const invokeArgs = {
+      method: 'set_admin',
+      args: [((i) => Address.fromString(i).toScVal())(new_admin)],
+    };
+    return this.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 }
