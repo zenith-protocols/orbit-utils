@@ -59,7 +59,7 @@ export async function deployAndInitContracts(addressBook: AddressBook) {
   console.log(treasuryInitMeta);
   console.log(`\n\ninitializing treasury factory`);
   const invokecall = await invokeSorobanOperation(
-    treasuryFactory.initialize(Address.fromString(config.admin.publicKey()), treasuryInitMeta),
+    treasuryFactory.initialize(config.admin.publicKey(), treasuryInitMeta),
     TreasuryFactoryContract.parsers.initialize,
     txParams
   );

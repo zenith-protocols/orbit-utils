@@ -1,5 +1,5 @@
-import { Address, Contract, ContractSpec } from '@stellar/stellar-sdk';
-
+import { Address, Contract } from '@stellar/stellar-sdk';
+import { Spec as ContractSpec } from '@stellar/stellar-sdk/contract';
 export class BridgeOracleContract extends Contract {
   spec: ContractSpec;
 

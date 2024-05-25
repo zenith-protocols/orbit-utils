@@ -1,4 +1,5 @@
-import { Address, Contract, ContractSpec, SorobanRpc, xdr } from '@stellar/stellar-sdk';
+import { Address, Contract, SorobanRpc, xdr } from '@stellar/stellar-sdk';
+import { Spec as ContractSpec } from '@stellar/stellar-sdk/contract';
 import { Network } from './types.js';
 import { decodeEntryKey } from './ledger_entry_helper.js';
 

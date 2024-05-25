@@ -1,0 +1,50 @@
+Setting Starting Status
+invoking soroban operation
+the account is Account {
+  _accountId: 'GDFHGWJSZM4Q6MKLIC3DSRAAATB7DPL2UK2D2BMPMR2MEMODT5OLVZL2',
+  sequence: BigNumber { s: 1, e: 15, c: [ 60, 74900527710326 ] }
+}
+Transaction built with sequence number: 6074900527710327
+Simulation error with details: {
+  _parsed: true,
+  id: undefined,
+  latestLedger: 1780368,
+  events: [
+    ChildStruct { _attributes: [Object] },
+    ChildStruct { _attributes: [Object] },
+    ChildStruct { _attributes: [Object] },
+    ChildStruct { _attributes: [Object] },
+    ChildStruct { _attributes: [Object] },
+    ChildStruct { _attributes: [Object] }
+  ],
+  error: 'HostError: Error(Contract, #1204)\n' +
+    '\n' +
+    'Event log (newest first):\n' +
+    '   0: [Diagnostic Event] contract:CARNGZNMHE6BUURYUDPVK3OYSHFYKT3RBNMHFR3KCQH7GUY3ZWLMYZKA, topics:[error, Error(Contract, #1204)], data:"escalating error to VM trap from failed host function call: fail_with_error"\n' +
+    '   1: [Diagnostic Event] contract:CARNGZNMHE6BUURYUDPVK3OYSHFYKT3RBNMHFR3KCQH7GUY3ZWLMYZKA, topics:[error, Error(Contract, #1204)], data:["failing with contract error", 1204]\n' +
+    '   2: [Diagnostic Event] contract:CDYUY5DAXPG6FO53KVWSGO4GMHVF2OFMDTAXV65PO3IDUE3MJOIWNKK2, topics:[fn_return, pool_data], data:{blnd: 0, q4w_pct: 0, tokens: 0, usdc: 0}\n' +
+    '   3: [Diagnostic Event] contract:CARNGZNMHE6BUURYUDPVK3OYSHFYKT3RBNMHFR3KCQH7GUY3ZWLMYZKA, topics:[fn_call, Bytes(f14c7460bbcde2bbbb556d233b8661ea5d38ac1cc17afbaf76d03a136c4b9166), pool_data], data:CARNGZNMHE6BUURYUDPVK3OYSHFYKT3RBNMHFR3KCQH7GUY3ZWLMYZKA\n' +
+    '   4: [Diagnostic Event] topics:[fn_call, Bytes(22d365ac393c1a5238a0df556dd891cb854f710b5872c76a140ff3531bcd96cc), set_status], data:0\n' +
+    '\n' +
+    'Backtrace (newest first):\n' +
+    '   0: soroban_env_host::vm::dispatch::fail_with_error\n' +
+    '   1: <F as soroban_wasmi::func::into_func::IntoFunc<T,(soroban_wasmi::func::caller::Caller<T>,T1),R>>::into_func::{{closure}}\n' +
+    '   2: soroban_wasmi::engine::EngineExecutor::execute_wasm_func\n' +
+    '   3: soroban_wasmi::engine::EngineInner::execute_func\n' +
+    '   4: soroban_wasmi::func::Func::call\n' +
+    '   5: soroban_env_host::vm::Vm::invoke_function_raw\n' +
+    '   6: soroban_env_host::host::frame::<impl soroban_env_host::host::Host>::with_frame\n' +
+    '   7: soroban_env_host::host::frame::<impl soroban_env_host::host::Host>::call_n_internal\n' +
+    '   8: soroban_env_host::host::frame::<impl soroban_env_host::host::Host>::invoke_function_and_return_val::{{closure}}\n' +
+    '   9: soroban_env_host::host::frame::<impl soroban_env_host::host::Host>::invoke_function\n' +
+    '  10: soroban_env_host::e2e_invoke::invoke_host_function_in_recording_mode\n' +
+    '  11: soroban_simulation::simulation::simulate_invoke_host_function_op\n' +
+    '  12: preflight::preflight_invoke_hf_op::{{closure}}\n' +
+    '  13: core::ops::function::FnOnce::call_once{{vtable.shim}}\n' +
+    '  14: preflight::catch_preflight_panic\n' +
+    '  15: _cgo_f11f55888060_Cfunc_preflight_invoke_hf_op\n' +
+    '             at tmp/go-build/cgo-gcc-prolog:105:11\n' +
+    '  16: runtime.asmcgocall\n' +
+    '             at ./runtime/asm_amd64.s:918\n' +
+    '\n'
+}

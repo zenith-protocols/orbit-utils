@@ -125,6 +125,9 @@ async function deploy() {
   //await addressBook.setContractId('oUSD', oUSDasset.address.toString());
 
   //await bumpContractInstance('oUSD', txParams);
+
+  // this was already deployed so commenting out.
+  /*
   const bridgeOracleId = await deployContract('bridgeOracle', 'bridgeOracle', txParams);
   await bumpContractInstance('bridgeOracle', txParams);
   const bridgeOracle = new BridgeOracleContract(bridgeOracleId);
@@ -137,6 +140,7 @@ async function deploy() {
     new Address(addressBook.getContractId('oracle'))
   );
   console.warn(bridgeOracleThing);
+  */
   // mint lp with blnd
   // if (mint_amount > 0) {
   //   if (deposit_asset == BigInt(0)) {
@@ -167,14 +171,16 @@ async function deploy() {
   // }
 
   // Update token value
+  /*
   const updateToken = await invokeSorobanOperation(
     backstop.updateTokenValue(),
     BackstopContract.parsers.updateTknVal,
     txParams
   );
   console.warn(updateToken);
+  */
   //********** Stellar Pool (XLM, USDC) **********//
-
+/*
   console.log('Deploy Pool');
   const poolSalt = randomBytes(32);
 
@@ -198,13 +204,17 @@ async function deploy() {
     await bumpContractInstance(deployPoolArgs.name, txParams);
   } else {
     console.error('the poolAddress did not get generated');
-  }
+  }*/
   const newPool = new PoolContract(addressBook.getContractId(pool_name));
+  /*
   console.log(`Successfully deployed ${deployPoolArgs.name} pool.\n`);
+  console.warn(`Successfully deployed ${deployPoolArgs.name} pool.\n`);
 
   console.log('Deploy Treasury');
   const treasurySalt = randomBytes(32);
-
+*/
+  /*
+  // the treasury has already been deployed and thus i have commented this out. 
   const treasuryId = await invokeSorobanOperation(
     treasuryFactory.deploy(treasurySalt, addressBook.getContractId('oUSD'), poolAddress as string),
     TreasuryFactoryContract.parsers.deploy,
@@ -213,17 +223,27 @@ async function deploy() {
 
   addressBook.setContractId('treasury', treasuryId);
   addressBook.writeToFile();
-
+*/
+  const treasuryId = addressBook.getContractId('treasury');
+  /*
   const tokenContract = new TokenContract(addressBook.getContractId('oUSD'));
   // set the admin on the token to the treasury
-  await invokeSorobanOperation(tokenContract.set_admin(treasuryId), () => undefined, txParams);
-
+  console.warn(
+    `setting admin on the ${tokenContract.asset.code} contract ${tokenContract.address}, to treasury ${treasuryId}`
+  );
+  console.log('setting admin on token contract', tokenContract.address, tokenContract.asset.code);
+  console.warn('setting admin on token contract', tokenContract.address, tokenContract.asset.code);
+*/
+  //await invokeSorobanOperation(tokenContract.set_admin(treasuryId), () => undefined, txParams);
+  /*
+  console.log('it is already set moving on');
   console.warn('Setup pool reserves and emissions\n');
   console.log('Setup pool reserves and emissions\n');
 
   for (let i = 0; i < reserves.length; i++) {
     const reserve_name = reserves[i];
     const reserve_config = reserve_configs[i];
+    console.warn('setup reserve');
     await setupReserve(
       newPool.contractId(),
       {
@@ -233,7 +253,7 @@ async function deploy() {
       txParams
     );
   }
-
+*/
   await invokeSorobanOperation(
     newPool.setEmissionsConfig(poolEmissionMetadata),
     PoolContract.parsers.setEmissionsConfig,

@@ -7,7 +7,7 @@ export async function setupReserve(
   txParams: TxParams
 ) {
   const pool = new PoolContract(poolAddress);
-
+  console.log('queuing set reserves', initReserveArgs);
   await invokeSorobanOperation(
     pool.queueSetReserve(initReserveArgs),
     PoolContract.parsers.queueSetReserve,
