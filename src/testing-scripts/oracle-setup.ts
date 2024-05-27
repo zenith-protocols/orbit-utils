@@ -1,26 +1,25 @@
-import { config } from '../utils/env_config.js';
-import { AddressBook } from '../utils/address-book.js';
-import { OracleContract } from '../external/oracle.js';
 import { Address } from '@stellar/stellar-sdk';
-import { invokeSorobanOperation, TxParams, signWithKeypair } from '../utils/tx.js';
+import { OracleContract } from '../external/oracle.js';
+import { AddressBook } from '../utils/address-book.js';
+import {
+  bumpContractCode,
+  bumpContractInstance,
+  deployContract,
+  installContract,
+} from '../utils/contract.js';
+import { config } from '../utils/env_config.js';
+import { TxParams, invokeSorobanOperation } from '../utils/tx.js';
 
-async function set_oracle_prices(addressBook: AddressBook) {
-  const txParams: TxParams = {
-    account: await config.rpc.getAccount(config.admin.publicKey()),
-    txBuilderOptions: {
-      fee: '10000',
-      timebounds: {
-        minTime: 0,
-        maxTime: 0,
-      },
-      networkPassphrase: config.passphrase,
-    },
-    signerFunction: async (txXdr: string) => {
-      return signWithKeypair(txXdr, config.passphrase, config.admin);
-    },
-  };
-  // Initialize Contracts
-  const oracle = new OracleContract(addressBook.getContractId('oraclemock'));
+export async function setupMockOracle(
+  txParams: TxParams,
+  addressBook: AddressBook
+): Promise<OracleContract> {
+  await installContract('oraclemock', txParams, addressBook);
+  await bumpContractCode('oraclemock', txParams, addressBook);
+  const oracleAddress = await deployContract('oraclemock', 'oraclemock', txParams, addressBook);
+  await bumpContractInstance('oraclemock', txParams, addressBook);
+
+  const oracle = new OracleContract(oracleAddress);
   await invokeSorobanOperation(
     oracle.setData(
       Address.fromString(config.admin.publicKey()),
@@ -56,7 +55,6 @@ async function set_oracle_prices(addressBook: AddressBook) {
     () => undefined,
     txParams
   );
-
   await invokeSorobanOperation(
     oracle.setPriceStable([
       BigInt(1e7),
@@ -68,8 +66,6 @@ async function set_oracle_prices(addressBook: AddressBook) {
     () => undefined,
     txParams
   );
+  console.log('Successfully deployed and setup the mock Oracle contract.\n');
+  return new OracleContract(oracleAddress);
 }
-
-const network = process.argv[2];
-const addressBook = AddressBook.loadFromFile(network);
-await set_oracle_prices(addressBook);
