@@ -1,20 +1,18 @@
 import {
   Address,
   SorobanRpc,
-  scValToBigInt,
   xdr,
   TransactionBuilder,
-  scValToNative,
   Transaction,
-  Memo,
-  Operation,
+  scValToBigInt,
+  scValToNative,
 } from '@stellar/stellar-sdk';
 import { estJoinPool, CometClient } from '../utils/comet.js';
-import { BackstopToken } from '@blend-capital/blend-sdk';
 import { AddressBook } from '../utils/address-book.js';
 import inquirer from 'inquirer';
-import { TxParams, signWithKeypair } from '../utils/tx.js';
+import { TxParams, signWithKeypair, sendTransaction } from '../utils/tx.js';
 import { config } from '../utils/env_config.js';
+import { BackstopToken, ContractErrorType, parseError } from '@blend-capital/blend-sdk';
 import { decodeEntryKey } from '../external/ledger_entry_helper.js';
 
 const DECIMALS = 7;
@@ -105,12 +103,10 @@ async function mintLPTokens(addressBook: AddressBook, mintAmount: bigint, slippa
   // Estimate the required BLND and USDC amounts
   const { blnd, usdc } = estJoinPool(poolData, mintAmount, slippage);
 
-  console.log(
-    `Estimated BLND: ${toBalance(
-      scaleInputToBigInt(blnd.toString(), DECIMALS),
-      DECIMALS
-    )}, Estimated USDC: ${toBalance(scaleInputToBigInt(usdc.toString(), DECIMALS), DECIMALS)}`
-  );
+  const estimatedBLND = toBalance(scaleInputToBigInt(blnd.toString(), DECIMALS), DECIMALS);
+  const estimatedUSDC = toBalance(scaleInputToBigInt(usdc.toString(), DECIMALS), DECIMALS);
+
+  console.log(`Estimated BLND: ${estimatedBLND}, Estimated USDC: ${estimatedUSDC}`);
 
   const txParams: TxParams = {
     account: await config.rpc.getAccount(config.admin.publicKey()),
@@ -148,11 +144,28 @@ async function mintLPTokens(addressBook: AddressBook, mintAmount: bigint, slippa
     return;
   }
 
-  console.log('Simulation successful. Proceeding to submit the transaction.');
+  console.log('Simulation successful.');
 
+  // Confirm with the user before proceeding
+  const { confirm } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'confirm',
+      message: `Proceed with the transaction to mint LP tokens using ${estimatedBLND} BLND and ${estimatedUSDC}?`,
+    },
+  ]);
+
+  if (!confirm) {
+    console.log('Transaction cancelled.');
+    return;
+  }
+
+  console.log('Proceeding to submit the transaction.');
+  const assembledTx = SorobanRpc.assembleTransaction(tx, simulateResponse).build();
   // Sign and submit the transaction
-  const signedTxEnvelopeXDR = await txParams.signerFunction(tx.toXDR());
+  const signedTxEnvelopeXDR = await txParams.signerFunction(assembledTx.toXDR());
   const signedTx = new Transaction(signedTxEnvelopeXDR, config.passphrase);
+
   const sendResponse = await config.rpc.sendTransaction(signedTx);
 
   if (sendResponse.status === 'ERROR') {
@@ -160,7 +173,28 @@ async function mintLPTokens(addressBook: AddressBook, mintAmount: bigint, slippa
     return;
   }
 
-  console.log('Successfully minted LP tokens');
+  // Fetch and parse the transaction result
+  let get_tx_response: SorobanRpc.Api.GetTransactionResponse = await config.rpc.getTransaction(
+    sendResponse.hash
+  );
+  while (get_tx_response.status === 'NOT_FOUND') {
+    await new Promise((resolve) => setTimeout(resolve, 6000));
+    get_tx_response = await config.rpc.getTransaction(sendResponse.hash);
+  }
+
+  if (get_tx_response.status === 'SUCCESS') {
+    console.log('Transaction successfully submitted with hash:', sendResponse.hash);
+  } else {
+    console.log('Transaction failed:', get_tx_response.status, sendResponse.hash);
+    const error = parseError(get_tx_response);
+    console.error(
+      'Transaction failure detail:',
+      error,
+      'Failure Message:',
+      ContractErrorType[error.type]
+    );
+    throw error; // Rethrow to ensure calling code can handle it
+  }
 }
 
 async function main() {
