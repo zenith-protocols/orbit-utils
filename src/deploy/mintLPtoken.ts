@@ -17,6 +17,16 @@ import { TxParams, signWithKeypair } from '../utils/tx.js';
 import { config } from '../utils/env_config.js';
 import { decodeEntryKey } from '../external/ledger_entry_helper.js';
 
+const DECIMALS = 7;
+
+function scaleInputToBigInt(amount: string, decimals: number): bigint {
+  return BigInt(Math.floor(Number(amount) * Math.pow(10, decimals)));
+}
+
+function toBalance(amount: bigint, decimals: number): string {
+  return (Number(amount) / Math.pow(10, decimals)).toFixed(decimals);
+}
+
 async function loadBackstopToken(
   id: string,
   blndTkn: string,
@@ -84,8 +94,8 @@ async function mintLPTokens(addressBook: AddressBook, mintAmount: bigint, slippa
   console.log('Minting LP tokens with BLND and USDC...');
 
   const cometAddress = addressBook.getContractId('comet');
-  const blndAddress = addressBook.getContractId('blnd');
-  const usdcAddress = addressBook.getContractId('usdc');
+  const blndAddress = addressBook.getContractId('BLND');
+  const usdcAddress = addressBook.getContractId('USDC');
 
   const comet = new CometClient(cometAddress);
 
@@ -95,7 +105,12 @@ async function mintLPTokens(addressBook: AddressBook, mintAmount: bigint, slippa
   // Estimate the required BLND and USDC amounts
   const { blnd, usdc } = estJoinPool(poolData, mintAmount, slippage);
 
-  console.log(`Estimated BLND: ${blnd}, Estimated USDC: ${usdc}`);
+  console.log(
+    `Estimated BLND: ${toBalance(
+      scaleInputToBigInt(blnd.toString(), DECIMALS),
+      DECIMALS
+    )}, Estimated USDC: ${toBalance(scaleInputToBigInt(usdc.toString(), DECIMALS), DECIMALS)}`
+  );
 
   const txParams: TxParams = {
     account: await config.rpc.getAccount(config.admin.publicKey()),
@@ -114,8 +129,8 @@ async function mintLPTokens(addressBook: AddressBook, mintAmount: bigint, slippa
   // Build the join operation
   const joinOp = comet.join({
     poolAmount: mintAmount,
-    blndLimitAmount: BigInt(Math.floor(blnd * 1e7)),
-    usdcLimitAmount: BigInt(Math.floor(usdc * 1e7)),
+    blndLimitAmount: scaleInputToBigInt(blnd.toString(), DECIMALS),
+    usdcLimitAmount: scaleInputToBigInt(usdc.toString(), DECIMALS),
     user: config.admin.publicKey(),
   });
 
@@ -175,7 +190,7 @@ async function main() {
     },
   ]);
 
-  await mintLPTokens(addressBook, BigInt(mintAmount), Number(slippage) / 100);
+  await mintLPTokens(addressBook, scaleInputToBigInt(mintAmount, DECIMALS), Number(slippage) / 100);
 }
 
 main().catch((error) => {
