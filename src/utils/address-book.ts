@@ -110,9 +110,8 @@ export class AddressBook {
   }
 }
 
-/*const network = process.argv[2];
+const network = process.argv[2];
 if (network == undefined || network == '') {
-  throw new Error('Error: Network argument required\nEa: `npm run deploy testnet`');
-}*/
-
-//export const addressBook = AddressBook.loadFromFile(network);
+  throw new Error('Error: Network argument required');
+}
+export const addressBook = AddressBook.loadFromFile(network);
