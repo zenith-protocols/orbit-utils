@@ -2,12 +2,17 @@ node_modules
 dist
 lib
 .DS_Store
-
+log
 src/scripts/temp.ts
-
+.soroban
 # configuration files
 .env
 *.contracts.json
 !futurenet.contracts.json
 !testnet.contracts.json
 !mainnet.contracts.json
+.old
+*.old
+*.old.ts
+*.old.js
+**/*.old.ts
