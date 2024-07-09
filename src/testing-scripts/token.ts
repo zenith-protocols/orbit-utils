@@ -4,8 +4,8 @@ import {
   createDeployStellarAssetOperation,
   createInstallOperation,
   invokeStellarOperation,
-} from '../utils/contract';
-import { AddressBook } from '../utils/address_book';
+} from '../utils/contract.js';
+import { AddressBook } from '../utils/address-book.js';
 import { Token } from 'blend-sdk';
 import { createTxBuilder } from '../utils/tx';
 import { config } from '../utils/env_config';

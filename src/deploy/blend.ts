@@ -82,7 +82,7 @@ export async function deployBlend(
     new BackstopContract(backstopAddress),
     new EmitterContract(emitterAddress),
     new PoolFactoryContract(factoryAddress),
-  ] as const;
+  ];
 }
 
 export async function installBlend(txParams: TxParams): Promise<void> {
@@ -105,7 +105,7 @@ export async function onlyDeployBlend(
     new BackstopContract(backstopAddress),
     new EmitterContract(emitterAddress),
     new PoolFactoryContract(factoryAddress),
-  ] as const;
+  ];
 }
 
 export async function initBlend(
@@ -164,5 +164,5 @@ export async function initBlend(
     new BackstopContract(backstopAddress),
     new EmitterContract(emitterAddress),
     new PoolFactoryContract(factoryAddress),
-  ] as const;
+  ];
 }

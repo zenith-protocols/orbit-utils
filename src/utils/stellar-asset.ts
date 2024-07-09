@@ -41,7 +41,7 @@ export async function deployStellarAsset(
   addressBook.setContractId(asset.code, contractId);
   console.warn(asset.code, contractId);
   addressBook.writeToFile();
-  await bumpContractInstance(asset.code, txParams, addressBook);
+  await bumpContractInstance(asset.code, txParams);
   console.warn(
     `Successfully deployed Stellar asset contract for 
     ${asset.code} with Contract ID: ${contractId}\n 

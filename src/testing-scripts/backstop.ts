@@ -1,12 +1,12 @@
 import { Keypair, xdr } from 'soroban-client';
-import { AddressBook } from '../utils/address_book';
+import { AddressBook } from '../utils/address-book.js';
 
 import {
   createDeployOperation,
   createInstallOperation,
   invokeStellarOperation,
-} from '../utils/contract';
-import { Backstop } from 'blend-sdk';
+} from '../utils/contract.js';
+import { Backstop } from '@blend-capital/blend-sdk';
 
 export async function installBackstop(contracts: AddressBook, source: Keypair) {
   const operation = createInstallOperation('backstop', contracts);

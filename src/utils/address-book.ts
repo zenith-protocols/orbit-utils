@@ -79,8 +79,6 @@ export class AddressBook {
    */
   setContractId(contractKey: string, contractId: string) {
     this.ids.set(contractKey, contractId);
-    console.warn(`set contractid ${contractKey}, ${contractId}`);
-    this.writeToFile();
   }
 
   /**
@@ -106,13 +104,11 @@ export class AddressBook {
    */
   setWasmHash(contractKey: string, wasmHash: string) {
     this.hashes.set(contractKey, wasmHash);
-    console.warn(`set wasm hash ${contractKey}, ${wasmHash}`);
   }
 }
 
-/*const network = process.argv[2];
+const network = process.argv[2];
 if (network == undefined || network == '') {
-  throw new Error('Error: Network argument required\nEa: `npm run deploy testnet`');
-}*/
-
-//export const addressBook = AddressBook.loadFromFile(network);
+  throw new Error('Error: Network argument required');
+}
+export const addressBook = AddressBook.loadFromFile(network);

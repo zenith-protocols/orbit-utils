@@ -105,12 +105,12 @@ export async function deployAndInitializeTreasuryFactory(addressBook: AddressBoo
   await airdropAccount(config.admin);
 
   console.log('Installing Orbit Contracts');
-  await installContract('treasury', txParams, addressBook);
-  await bumpContractCode('treasury', txParams, addressBook);
-  await installContract('pegkeeper', txParams, addressBook);
-  await bumpContractCode('pegkeeper', txParams, addressBook);
-  await installContract('bridgeOracle', txParams, addressBook);
-  await bumpContractCode('bridgeOracle', txParams, addressBook);
+  await installContract('treasury', txParams);
+  await bumpContractCode('treasury', txParams);
+  await installContract('pegkeeper', txParams);
+  await bumpContractCode('pegkeeper', txParams);
+  await installContract('bridgeOracle', txParams);
+  await bumpContractCode('bridgeOracle', txParams);
 
   console.log('Deploying and Initializing Orbit');
   
@@ -121,7 +121,7 @@ export async function deployOUSDTokenContract(addressBook: AddressBook) {
   const oUSD = new Asset('oUSD', config.admin.publicKey());
   const oUSDasset = await tryDeployStellarAsset(oUSD, txParams, addressBook);
   addressBook.setContractId('oUSD', oUSDasset.address.toString());
-  await bumpContractInstance('oUSD', txParams, addressBook);
+  await bumpContractInstance('oUSD', txParams);
 }
 
 export async function deployAndInitializeBridgeOracle(addressBook: AddressBook) {
@@ -129,10 +129,9 @@ export async function deployAndInitializeBridgeOracle(addressBook: AddressBook) 
   const bridgeOracleId = await deployContract(
     'bridgeOracle',
     'bridgeOracle',
-    txParams,
-    addressBook
+    txParams
   );
-  await bumpContractInstance('bridgeOracle', txParams, addressBook);
+  await bumpContractInstance('bridgeOracle', txParams);
   const bridgeOracle = new BridgeOracleContract(bridgeOracleId);
 
   console.log('bridge oracle deployed: ' + bridgeOracleId);
@@ -247,7 +246,7 @@ export async function deployTreasuryPool(addressBook: AddressBook) {
   if (poolAddress) {
     addressBook.setContractId(pool_name, poolAddress);
     addressBook.writeToFile();
-    await bumpContractInstance(deployPoolArgs.name, txParams, addressBook);
+    await bumpContractInstance(deployPoolArgs.name, txParams);
   } else {
     console.error('The poolAddress did not get generated');
     return;
