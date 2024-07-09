@@ -6,7 +6,6 @@ import {
   deployAndInitializeTreasuryFactory,
   deployOUSDTokenContract,
   deployAndInitializeBridgeOracle,
-// mintLPTokensWithBlend,
   updateBackstopTokenValue,
   deployTreasuryPool,
   setTokenAdminToTreasuryPool,

@@ -37,14 +37,13 @@ import { TreasuryFactoryContract, TreasuryInitMeta } from '../external/treasuryF
 import { TokenContract } from '../external/token.js';
 import { BridgeOracleContract } from '../external/bridgeOracle.js';
 import { setupReserve } from '../utils/blend-pool/reserve-setup.js';
-import { estJoinPool, estLPTokenViaJoin, CometClient } from '../utils/comet.js';
 
-//const network = process.argv[2];
 const mint_amount = BigInt(10_000e7);
 const pool_name = 'OrbitUSD';
 const backstop_take_rate = 0;
 const max_positions = 7;
 const reserves = ['oUSD', 'XLM'];
+
 const reserve_configs: ReserveConfig[] = [
   {
     index: 0, // Does not matter
@@ -73,6 +72,7 @@ const reserve_configs: ReserveConfig[] = [
     reactivity: 200,
   },
 ];
+
 const poolEmissionMetadata: ReserveEmissionMetadata[] = [
   {
     res_index: 0, // first reserve
@@ -105,36 +105,15 @@ export async function deployAndInitializeTreasuryFactory(addressBook: AddressBoo
   await airdropAccount(config.admin);
 
   console.log('Installing Orbit Contracts');
-  await installContract('treasuryFactory', txParams, addressBook);
-  await bumpContractCode('treasuryFactory', txParams, addressBook);
   await installContract('treasury', txParams, addressBook);
   await bumpContractCode('treasury', txParams, addressBook);
+  await installContract('pegkeeper', txParams, addressBook);
+  await bumpContractCode('pegkeeper', txParams, addressBook);
   await installContract('bridgeOracle', txParams, addressBook);
   await bumpContractCode('bridgeOracle', txParams, addressBook);
 
   console.log('Deploying and Initializing Orbit');
-  const treasuryFactoryAddress = await deployContract(
-    'treasuryFactory',
-    'treasuryFactory',
-    txParams,
-    addressBook
-  );
-  await bumpContractInstance('treasuryFactory', txParams, addressBook);
-  const treasuryFactory = new TreasuryFactoryContract(treasuryFactoryAddress);
-
-  const treasuryInitMeta: TreasuryInitMeta = {
-    treasury_hash: Buffer.from(addressBook.getWasmHash('treasury'), 'hex'),
-    pool_factory: addressBook.getContractId('poolFactory'),
-  };
-  console.log(`\n\ninitializing treasury factory`);
-  const invokecall = await invokeSorobanOperation(
-    treasuryFactory.initialize(config.admin.publicKey(), treasuryInitMeta),
-    TreasuryFactoryContract.parsers.initialize,
-    txParams
-  );
-  console.log(invokecall);
-
-  await bumpContractInstance('treasuryFactory', txParams, addressBook);
+  
 }
 
 export async function deployOUSDTokenContract(addressBook: AddressBook) {

@@ -16,23 +16,6 @@ import { config } from './env_config.js';
 import { TxParams, invokeSorobanOperation } from './tx.js';
 import { AddressBook } from './address-book.js';
 
-// Relative paths from __dirname
-const CONTRACT_REL_PATH = {
-  token: '../../src/external/token.wasm',
-  comet: `../../${config.comet_wasm_rel_path}comet.wasm`,
-  cometFactory: `../../${config.comet_wasm_rel_path}comet_factory.wasm`,
-  oraclemock: '../../src/external/oracle.wasm',
-  emitter: `../../${config.blend_wasm_rel_path}emitter.wasm`,
-  poolFactory: `../../${config.blend_wasm_rel_path}pool_factory.wasm`,
-  backstop: `../../${config.blend_wasm_rel_path}backstop.wasm`,
-  lendingPool: `../../${config.blend_wasm_rel_path}pool.wasm`,
-  tokenLockup: `../../${config.token_lockup_wasm_rel_path}token_lockup.wasm`,
-  blendLockup: `../../${config.blend_lockup_wasm_rel_path}blend_lockup.wasm`,
-  treasury: `../../${config.orbit_wasm_rel_path}treasury.wasm`,
-  treasuryFactory: `../../${config.orbit_wasm_rel_path}treasury_factory.wasm`,
-  bridgeOracle: `../../${config.orbit_wasm_rel_path}bridge_oracle.wasm`,
-};
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -48,7 +31,6 @@ export function getLedgerKeyWasmId(wasmHash: Buffer): xdr.LedgerKey {
     })
   );
   console.log(`retrieved a ledger key for wasm id ${wasmHash.toString('hex')}`);
-
   return ledgerKey;
 }
 
