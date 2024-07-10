@@ -87,8 +87,8 @@ export async function deployTokenContract(addressBook: AddressBook, name: string
 
 export async function deployPool(addressBook: AddressBook, name: string, backstop_take_rate: number, max_positions: number) {
   console.log('Deploying pool...');
-  const poolFactory = new PoolFactoryContract(addressBook.getContractId('poolFactory'));
-  const backstop = new BackstopContract(addressBook.getContractId('backstop'));
+  const poolFactory = new PoolFactoryContract(config.pool_factory);
+  const backstop = new BackstopContract(config.backstop);
 
   const poolSalt = randomBytes(32);
   const deployPoolArgs = {
@@ -114,13 +114,12 @@ export async function deployPool(addressBook: AddressBook, name: string, backsto
     return;
   }
 
-  const newPool = new PoolContract(addressBook.getContractId(pool_name));
   console.log(`Successfully deployed ${deployPoolArgs.name} pool.`);
 }
 
 export async function backstopDeposit(addressBook: AddressBook, pool: string, amount: number) {
   console.log('Depositing to backstop...');
-  const backstop = new BackstopContract(addressBook.getContractId('backstop'));
+  const backstop = new BackstopContract(config.backstop);
   await invokeSorobanOperation(
     backstop.deposit({
       from: config.admin.publicKey(),
@@ -169,7 +168,7 @@ export async function setPoolReserve(addressBook: AddressBook, pool_name: string
 
 export async function addPoolToRewardZone(addressBook: AddressBook, poolToRemove: string) {
   console.log('Adding to reward zone...');
-  const backstop = new BackstopContract(addressBook.getContractId('backstop'));
+  const backstop = new BackstopContract(config.backstop);
   const newPool = new PoolContract(addressBook.getContractId(pool_name));
   await invokeSorobanOperation(
     backstop.addReward({

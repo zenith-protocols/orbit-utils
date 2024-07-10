@@ -67,18 +67,6 @@ async function confirmAction(message: string): Promise<boolean> {
 }
 
 async function selectAddressBookFile(network: string): Promise<AddressBook> {
-  const fileName = `../../${network}.contracts.json`;
-
-  if (fs.existsSync(fileName)) {
-    const { createNew } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'createNew',
-        message: 'An address book file already exists. Do you want to create a new one?',
-        default: false,
-      },
-    ]);
-  }
   return AddressBook.loadFromFile(network);
 }
 
