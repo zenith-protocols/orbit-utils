@@ -93,9 +93,9 @@ export async function deployPool(addressBook: AddressBook, name: string, backsto
   const poolSalt = randomBytes(32);
   const deployPoolArgs = {
     admin: config.admin.publicKey(),
-    name: pool_name,
+    name: name,
     salt: poolSalt,
-    oracle: addressBook.getContractId('bridgeOracle'),
+    oracle: config.bridgeOracle,
     backstop_take_rate: backstop_take_rate * 10000000,
     max_positions,
   };
@@ -106,9 +106,8 @@ export async function deployPool(addressBook: AddressBook, name: string, backsto
   );
 
   if (poolAddress) {
-    addressBook.setContractId(pool_name, poolAddress);
+    addressBook.setContractId(name, poolAddress);
     addressBook.writeToFile();
-    await bumpContractInstance(deployPoolArgs.name, txParams);
   } else {
     console.error('The poolAddress did not get generated');
     return;
