@@ -30,14 +30,9 @@ import {
   bumpContractCode,
   bumpContractInstance,
   deployContract,
-  installContract,
 } from '../utils/contract.js';
 import { tryDeployStellarAsset } from '../utils/stellar-asset.js';
-import { TreasuryFactoryContract, TreasuryInitMeta } from '../external/treasuryFactory.js';
-import { TokenContract } from '../external/token.js';
-import { BridgeOracleContract } from '../external/bridgeOracle.js';
 import { setupReserve } from '../utils/blend-pool/reserve-setup.js';
-import { stat } from 'fs';
 
 const mint_amount = BigInt(10_000e7);
 const pool_name = 'OrbitUSD';
@@ -63,11 +58,8 @@ export async function initializeOrbit(addressBook: AddressBook) {
   await airdropAccount(config.admin);
 
   console.log('Installing Orbit Contracts');
-  await installContract('treasury', txParams);
   await bumpContractCode('treasury', txParams);
-  await installContract('pegkeeper', txParams);
   await bumpContractCode('pegkeeper', txParams);
-  await installContract('bridgeOracle', txParams);
   await bumpContractCode('bridgeOracle', txParams);
 
   console.log('Deploying and Initializing Orbit');
@@ -161,7 +153,7 @@ export async function setPoolStatus(addressBook: AddressBook, pool: string, stat
 
 }
 
-export async function setPoolReserves(addressBook: AddressBook, pool_name: string, token: string, reserve_config: ReserveConfig) {
+export async function setPoolReserve(addressBook: AddressBook, pool_name: string, token: string, reserve_config: ReserveConfig) {
   console.log('Setting up lending pool reserves...');
   const newPool = new PoolContract(addressBook.getContractId(pool_name));
     await setupReserve(

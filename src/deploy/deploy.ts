@@ -1,11 +1,14 @@
 import inquirer from 'inquirer';
 import fs from 'fs';
-import path from 'path';
 import { AddressBook } from '../utils/address-book.js';
 import {
   deployPool,
   initializeOrbit,
   deployTokenContract,
+  setPoolEmmision,
+  setPoolStatus,
+  setPoolReserve,
+  backstopDeposit,
 } from './deployLogic.js';
 import { ReserveConfig, ReserveEmissionMetadata } from '@blend-capital/blend-sdk';
 
@@ -101,37 +104,54 @@ async function poolOptions(addressBook: AddressBook, pool_name: string) {
 
   switch (poolAction) {
     case poolOptions[0]: // Set reserve
-      await setPoolReserve(addressBook, pool_name);
+      const { token, reserve_config } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'token',
+          message: 'Enter the token address:',
+        },
+        {
+          type: 'list',
+          name: 'reserve_config',
+          message: 'Select a reserve configuration:',
+          choices: reserve_configs,
+        },
+      ]);
+      await setPoolReserve(addressBook, pool_name, token, reserve_config);
       break;
     case poolOptions[1]: // Set emissions
-      if (await confirmAction('Are you sure you want to mint LP tokens with blend?')) {
-        //await mintLPTokensWithBlend(addressBook);
+      if (await confirmAction('Are you sure you want to set pool emissions?')) {
+        await setPoolEmmision(addressBook, pool_name, poolEmissionMetadata);
       }
       break;
     case poolOptions[2]: // Add to backstop
-      if (await confirmAction('Are you sure you want to update backstop token value?')) {
-        await updateBackstopTokenValue(addressBook);
-      }
+      const { backstop_amount } = await inquirer.prompt([
+        {
+          type: 'number',
+          name: 'backstop_amount',
+          message: 'Enter the amount to deposit to backstop:',
+        },
+      ]);
+      await backstopDeposit(addressBook, pool_name, backstop_amount);
       break;
     case poolOptions[3]: // Set status
-      if (await confirmAction('Are you sure you want to deploy treasury pool?')) {
-        await deployTreasuryPool(addressBook);
-      }
+      const { status } = await inquirer.prompt([
+        {
+          type: 'number',
+          name: 'status',
+          message: 'Enter the status:',
+        },
+      ]);
+      await setPoolStatus(addressBook, pool_name, status);
       break;
     case poolOptions[4]: // Add stablecoin
-      if (await confirmAction('Are you sure you want to set token admin to treasury pool?')) {
-        await setTokenAdminToTreasuryPool(addressBook);
-      }
+      //TODO: Add stablecoin
       break;
     case poolOptions[5]: // Add to Reward Zone
-      if (await confirmAction('Are you sure you want to setup lending pool reserves?')) {
-        await setupLendingPoolReserves(addressBook);
-      }
+      //TODO: Add to Reward Zone
       break;
     case poolOptions[6]: // Set Admin
-      if (await confirmAction('Are you sure you want to setup emissions on backstop?')) {
-        await setupEmissionsOnBackstop(addressBook);
-      }
+      //TODO: Set Admin
       break;
     default:
       console.log('Invalid action');
@@ -214,9 +234,7 @@ async function runCLI() {
       await poolOptions(addressBook, selected_pool_name);
       break;
     case options[4]: // Complete All Deployment Steps
-      if (await confirmAction('Are you sure you want to set lending pool status?')) {
-        await setLendingPoolStatus(addressBook);
-      }
+      //TODO: Complete all deployment steps
       break;
     default:
       console.log('Invalid action');
@@ -226,3 +244,4 @@ async function runCLI() {
 runCLI().catch((error) => {
   console.error('Error:', error);
 });
+
