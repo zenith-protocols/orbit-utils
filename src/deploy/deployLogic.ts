@@ -45,49 +45,6 @@ const backstop_take_rate = 0;
 const max_positions = 7;
 const reserves = ['oUSD', 'XLM'];
 
-const reserve_configs: ReserveConfig[] = [
-  {
-    index: 0, // Does not matter
-    decimals: 7,
-    c_factor: 0,
-    l_factor: 1_000_0000,
-    util: 800_0000, // must be under 950_0000
-    max_util: 1_000_0000, // must be greater than util
-    r_base: 100_000, // (0_0050000)
-    r_one: 400_000,
-    r_two: 2_000_000,
-    r_three: 7_500_000,
-    reactivity: 200, // must be 1000 or under
-  },
-  {
-    index: 0,
-    decimals: 7,
-    c_factor: 8_900_000,
-    l_factor: 0,
-    util: 0,
-    max_util: 0,
-    r_base: 100_000, // (0_0050000)
-    r_one: 400_000,
-    r_two: 2_000_000,
-    r_three: 7_500_000,
-    reactivity: 200,
-  },
-];
-
-const poolEmissionMetadata: ReserveEmissionMetadata[] = [
-  {
-    res_index: 0, // first reserve
-    res_type: 1, // 0 for d_token 1 for b_token
-    share: BigInt(0.5e7), // Share of total emissions
-  },
-  {
-    res_index: 1, // second reserve
-    res_type: 1, // 0 for d_token 1 for b_token
-    share: BigInt(0.5e7), // Share of total emissions
-  },
-];
-const startingStatus = 0; // 0 for active, 2 for admin on ice, 3 for on ice, 4 for admin frozen
-
 const txParams: TxParams = {
   account: await config.rpc.getAccount(config.admin.publicKey()),
   txBuilderOptions: {
@@ -101,7 +58,7 @@ const txParams: TxParams = {
   signerFunction: async (txXdr: string) => signWithKeypair(txXdr, config.passphrase, config.admin),
 };
 
-export async function deployAndInitializeTreasuryFactory(addressBook: AddressBook) {
+export async function initializeOrbit(addressBook: AddressBook) {
   console.log('Deploying and initializing treasury factory...');
   await airdropAccount(config.admin);
 
@@ -114,7 +71,7 @@ export async function deployAndInitializeTreasuryFactory(addressBook: AddressBoo
   await bumpContractCode('bridgeOracle', txParams);
 
   console.log('Deploying and Initializing Orbit');
-  //TODO: Initialize orbit
+  //TODO: Initialize orbit using config.admin
   
 }
 
@@ -126,25 +83,17 @@ export async function deployTokenContract(addressBook: AddressBook, name: string
   await bumpContractInstance(name, txParams);
 }
 
-export async function deployOUSDTokenContract(addressBook: AddressBook) {
-  console.log('Deploying oUSD token contract...');
-  const oUSD = new Asset('oUSD', config.admin.publicKey());
-  const oUSDasset = await tryDeployStellarAsset(oUSD, txParams, addressBook);
-  addressBook.setContractId('oUSD', oUSDasset.address.toString());
-  await bumpContractInstance('oUSD', txParams);
-}
+// export async function addStableCoin(addressBook: AddressBook, name: string) {
+//   console.log('Adding stable coin...');
+//   const treasury = new TreasuryContract(addressBook.getContractId("treasury"));
+//   await invokeSorobanOperation(
+//     treasury.addStableCoin(addressBook.getContractId(name)),
+//     PoolContract.parsers.addStableCoin,
+//     txParams
+//   );
+// }
 
-export async function updateBackstopTokenValue(addressBook: AddressBook) {
-  console.log('Updating backstop token value...');
-  const backstop = new BackstopContract(addressBook.getContractId('backstop'));
-  await invokeSorobanOperation(
-    backstop.updateTokenValue(),
-    BackstopContract.parsers.updateTknVal,
-    txParams
-  );
-}
-
-export async function deployTreasuryPool(addressBook: AddressBook) {
+export async function deployPool(addressBook: AddressBook, name: string, backstop_take_rate: number, max_positions: number) {
   console.log('Deploying pool...');
   const poolFactory = new PoolFactoryContract(addressBook.getContractId('poolFactory'));
   const backstop = new BackstopContract(addressBook.getContractId('backstop'));
@@ -155,7 +104,7 @@ export async function deployTreasuryPool(addressBook: AddressBook) {
     name: pool_name,
     salt: poolSalt,
     oracle: addressBook.getContractId('bridgeOracle'),
-    backstop_take_rate,
+    backstop_take_rate: backstop_take_rate * 10000000,
     max_positions,
   };
   const poolAddress = await invokeSorobanOperation(
@@ -212,21 +161,17 @@ export async function setPoolStatus(addressBook: AddressBook, pool: string, stat
 
 }
 
-export async function setupPoolReserves(addressBook: AddressBook) {
+export async function setPoolReserves(addressBook: AddressBook, pool_name: string, token: string, reserve_config: ReserveConfig) {
   console.log('Setting up lending pool reserves...');
   const newPool = new PoolContract(addressBook.getContractId(pool_name));
-  for (let i = 0; i < reserves.length; i++) {
-    const reserve_name = reserves[i];
-    const reserve_config = reserve_configs[i];
     await setupReserve(
       newPool.contractId(),
       {
-        asset: addressBook.getContractId(reserve_name),
+        asset: addressBook.getContractId(token),
         metadata: reserve_config,
       },
       txParams
     );
-  }
 }
 
 
@@ -242,41 +187,4 @@ export async function addPoolToRewardZone(addressBook: AddressBook, poolToRemove
     BackstopContract.parsers.addReward,
     txParams
   );
-}
-
-export async function revokeAdmin(addressBook: AddressBook, network: string) {
-  console.log('Revoking admin...');
-  const newPool = new PoolContract(addressBook.getContractId(pool_name));
-  const newAdmin = config.getUser('PROPOSER');
-  if (network !== 'mainnet') {
-    await airdropAccount(newAdmin);
-  }
-  const newAdminOp = newPool.setAdmin(newAdmin.publicKey());
-  const txBuilder = new TransactionBuilder(txParams.account, txParams.txBuilderOptions)
-    .setTimeout(0)
-    .addOperation(xdr.Operation.fromXDR(newAdminOp, 'base64'));
-  const transaction = txBuilder.build();
-  const newAdminSignedTx = new Transaction(
-    await signWithKeypair(transaction.toXDR(), config.passphrase, newAdmin),
-    config.passphrase
-  );
-  const simResponse = await config.rpc.simulateTransaction(newAdminSignedTx);
-  if (SorobanRpc.Api.isSimulationError(simResponse)) {
-    const error = parseError(simResponse);
-    throw error;
-  }
-  const assembledTx = SorobanRpc.assembleTransaction(newAdminSignedTx, simResponse).build();
-  const signedTx = new Transaction(
-    await txParams.signerFunction(assembledTx.toXDR()),
-    config.passphrase
-  );
-  await sendTransaction(signedTx, () => undefined);
-
-  const revokeOp = Operation.setOptions({
-    masterWeight: 0,
-  });
-  txParams.account = await config.rpc.getAccount(newAdmin.publicKey());
-  txParams.signerFunction = async (txXDR: string) =>
-    signWithKeypair(txXDR, config.passphrase, newAdmin);
-  await invokeClassicOp(revokeOp.toXDR('base64'), txParams);
 }
