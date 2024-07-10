@@ -37,6 +37,7 @@ import { TreasuryFactoryContract, TreasuryInitMeta } from '../external/treasuryF
 import { TokenContract } from '../external/token.js';
 import { BridgeOracleContract } from '../external/bridgeOracle.js';
 import { setupReserve } from '../utils/blend-pool/reserve-setup.js';
+import { stat } from 'fs';
 
 const mint_amount = BigInt(10_000e7);
 const pool_name = 'OrbitUSD';
@@ -113,7 +114,16 @@ export async function deployAndInitializeTreasuryFactory(addressBook: AddressBoo
   await bumpContractCode('bridgeOracle', txParams);
 
   console.log('Deploying and Initializing Orbit');
+  //TODO: Initialize orbit
   
+}
+
+export async function deployTokenContract(addressBook: AddressBook, name: string) {
+  console.log('Deploying token contract...');
+  const token = new Asset(name, config.admin.publicKey());
+  const tokenContract = await tryDeployStellarAsset(token, txParams, addressBook);
+  addressBook.setContractId(name, tokenContract.address.toString());
+  await bumpContractInstance(name, txParams);
 }
 
 export async function deployOUSDTokenContract(addressBook: AddressBook) {
@@ -124,95 +134,6 @@ export async function deployOUSDTokenContract(addressBook: AddressBook) {
   await bumpContractInstance('oUSD', txParams);
 }
 
-export async function deployAndInitializeBridgeOracle(addressBook: AddressBook) {
-  console.log('Deploying and initializing bridge oracle...');
-  const bridgeOracleId = await deployContract(
-    'bridgeOracle',
-    'bridgeOracle',
-    txParams
-  );
-  await bumpContractInstance('bridgeOracle', txParams);
-  const bridgeOracle = new BridgeOracleContract(bridgeOracleId);
-
-  console.log('bridge oracle deployed: ' + bridgeOracleId);
-  await bridgeOracle.initialize(
-    new Address(addressBook.getContractId('oUSD')),
-    new Address(addressBook.getContractId('USDC')),
-    new Address(addressBook.getContractId('oracle'))
-  );
-}
-
-/*
-export async function mintLPTokensWithBlendAndUSDC(
-  addressBook: AddressBook,
-  mintAmount: bigint,
-  slippage: number
-) {
-  console.log('Minting LP tokens with BLND and USDC...');
-
-  const cometAddress = addressBook.getContractId('comet');
-  const blndAddress = addressBook.getContractId('blnd');
-  const usdcAddress = addressBook.getContractId('usdc');
-
-  const comet = new CometClient(cometAddress);
-
-  // Fetch the current pool data
-  const poolData = await comet.getPoolData();
-
-  // Estimate the required BLND and USDC amounts
-  const { blnd, usdc } = estJoinPool(poolData, mintAmount, slippage);
-
-  console.log(`Estimated BLND: ${blnd}, Estimated USDC: ${usdc}`);
-
-  const txParams: TxParams = {
-    account: await config.rpc.getAccount(config.admin.publicKey()),
-    txBuilderOptions: {
-      fee: '10000',
-      timebounds: {
-        minTime: 0,
-        maxTime: 0,
-      },
-      networkPassphrase: config.passphrase,
-    },
-    signerFunction: async (txXDR: string) =>
-      signWithKeypair(txXDR, config.passphrase, config.admin),
-  };
-
-  // Simulate the transaction
-  const simulateResult = await comet.simulateJoin(
-    {
-      poolAmount: mintAmount,
-      blndLimitAmount: BigInt(Math.floor(blnd * 1e7)),
-      usdcLimitAmount: BigInt(Math.floor(usdc * 1e7)),
-      user: config.admin.publicKey(),
-    },
-    txParams
-  );
-
-  if (simulateResult.error) {
-    console.error('Simulation failed:', simulateResult.error);
-    return;
-  }
-
-  // Execute the transaction
-  const result = await comet.join(
-    {
-      poolAmount: mintAmount,
-      blndLimitAmount: BigInt(Math.floor(blnd * 1e7)),
-      usdcLimitAmount: BigInt(Math.floor(usdc * 1e7)),
-      user: config.admin.publicKey(),
-    },
-    txParams
-  );
-
-  if (result.error) {
-    console.error('Minting LP tokens failed:', result.error);
-    return;
-  }
-
-  console.log('Successfully minted LP tokens');
-}
-*/
 export async function updateBackstopTokenValue(addressBook: AddressBook) {
   console.log('Updating backstop token value...');
   const backstop = new BackstopContract(addressBook.getContractId('backstop'));
@@ -224,7 +145,7 @@ export async function updateBackstopTokenValue(addressBook: AddressBook) {
 }
 
 export async function deployTreasuryPool(addressBook: AddressBook) {
-  console.log('Deploying treasury pool...');
+  console.log('Deploying pool...');
   const poolFactory = new PoolFactoryContract(addressBook.getContractId('poolFactory'));
   const backstop = new BackstopContract(addressBook.getContractId('backstop'));
 
@@ -254,68 +175,44 @@ export async function deployTreasuryPool(addressBook: AddressBook) {
 
   const newPool = new PoolContract(addressBook.getContractId(pool_name));
   console.log(`Successfully deployed ${deployPoolArgs.name} pool.`);
+}
 
-  const treasuryFactory = new TreasuryFactoryContract(addressBook.getContractId('treasuryFactory'));
-  const treasurySalt = randomBytes(32);
-  const treasuryId = await invokeSorobanOperation(
-    treasuryFactory.deploy(treasurySalt, addressBook.getContractId('oUSD'), poolAddress),
-    TreasuryFactoryContract.parsers.deploy,
-    txParams
-  );
-
-  addressBook.setContractId('treasury', treasuryId);
-  addressBook.writeToFile();
-
-  const tokenContract = new TokenContract(addressBook.getContractId('oUSD'));
-  console.warn(
-    `setting admin on the ${tokenContract.asset.code} contract ${tokenContract.address}, to treasury ${treasuryId}`
-  );
-  await invokeSorobanOperation(tokenContract.set_admin(treasuryId), () => undefined, txParams);
-
-  for (let i = 0; i < reserves.length; i++) {
-    const reserve_name = reserves[i];
-    const reserve_config = reserve_configs[i];
-    await setupReserve(
-      newPool.contractId(),
-      {
-        asset: addressBook.getContractId(reserve_name),
-        metadata: reserve_config,
-      },
-      txParams
-    );
-  }
-
-  await invokeSorobanOperation(
-    newPool.setEmissionsConfig(poolEmissionMetadata),
-    PoolContract.parsers.setEmissionsConfig,
-    txParams
-  );
-
+export async function backstopDeposit(addressBook: AddressBook, pool: string, amount: number) {
+  console.log('Depositing to backstop...');
+  const backstop = new BackstopContract(addressBook.getContractId('backstop'));
   await invokeSorobanOperation(
     backstop.deposit({
       from: config.admin.publicKey(),
-      pool_address: newPool.contractId(),
-      amount: mint_amount,
+      pool_address: addressBook.getContractId(pool),
+      amount: BigInt(amount),
     }),
     BackstopContract.parsers.deposit,
     txParams
   );
+}
 
+export async function setPoolEmmision(addressBook: AddressBook, pool: string, emission: ReserveEmissionMetadata[]) {
+  console.log('Setting pool emission...');
+  const newPool = new PoolContract(addressBook.getContractId(pool));
   await invokeSorobanOperation(
-    newPool.setStatus(startingStatus),
-    PoolContract.parsers.setStatus,
+    newPool.setEmissionsConfig(emission),
+    PoolContract.parsers.setEmissionsConfig,
     txParams
   );
 }
 
-export async function setTokenAdminToTreasuryPool(addressBook: AddressBook) {
-  console.log('Setting token admin to treasury pool...');
-  const tokenContract = new TokenContract(addressBook.getContractId('oUSD'));
-  const treasuryId = addressBook.getContractId('treasury');
-  await invokeSorobanOperation(tokenContract.set_admin(treasuryId), () => undefined, txParams);
+export async function setPoolStatus(addressBook: AddressBook, pool: string, status: number) {
+  console.log('Setting pool status...');
+  const newPool = new PoolContract(addressBook.getContractId(pool));
+  await invokeSorobanOperation(
+    newPool.setStatus(status),
+    PoolContract.parsers.setStatus,
+    txParams
+  );
+
 }
 
-export async function setupLendingPoolReserves(addressBook: AddressBook) {
+export async function setupPoolReserves(addressBook: AddressBook) {
   console.log('Setting up lending pool reserves...');
   const newPool = new PoolContract(addressBook.getContractId(pool_name));
   for (let i = 0; i < reserves.length; i++) {
@@ -332,27 +229,8 @@ export async function setupLendingPoolReserves(addressBook: AddressBook) {
   }
 }
 
-export async function setupEmissionsOnBackstop(addressBook: AddressBook) {
-  console.log('Setting up emissions on backstop...');
-  const newPool = new PoolContract(addressBook.getContractId(pool_name));
-  await invokeSorobanOperation(
-    newPool.setEmissionsConfig(poolEmissionMetadata),
-    PoolContract.parsers.setEmissionsConfig,
-    txParams
-  );
-}
 
-export async function setLendingPoolStatus(addressBook: AddressBook) {
-  console.log('Setting lending pool status...');
-  const newPool = new PoolContract(addressBook.getContractId(pool_name));
-  await invokeSorobanOperation(
-    newPool.setStatus(startingStatus),
-    PoolContract.parsers.setStatus,
-    txParams
-  );
-}
-
-export async function addToRewardZone(addressBook: AddressBook, poolToRemove: string) {
+export async function addPoolToRewardZone(addressBook: AddressBook, poolToRemove: string) {
   console.log('Adding to reward zone...');
   const backstop = new BackstopContract(addressBook.getContractId('backstop'));
   const newPool = new PoolContract(addressBook.getContractId(pool_name));
