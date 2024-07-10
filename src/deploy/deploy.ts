@@ -79,6 +79,65 @@ async function selectAddressBookFile(network: string): Promise<AddressBook> {
   return AddressBook.loadFromFile(network);
 }
 
+async function poolOptions(addressBook: AddressBook, pool_name: string) {
+  const poolOptions = [
+    'Set reserve',
+    'Set emissions',
+    'Add to backstop',
+    'Set status',
+    'Add stablecoin',
+    'Add to Reward Zone',
+    'Set Admin',
+  ];
+
+  const { poolAction } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'poolAction',
+      message: `Select an action for pool ${pool_name}:`,
+      choices: poolOptions,
+    },
+  ]);
+
+  switch (poolAction) {
+    case poolOptions[0]: // Set reserve
+      await setPoolReserve(addressBook, pool_name);
+      break;
+    case poolOptions[1]: // Set emissions
+      if (await confirmAction('Are you sure you want to mint LP tokens with blend?')) {
+        //await mintLPTokensWithBlend(addressBook);
+      }
+      break;
+    case poolOptions[2]: // Add to backstop
+      if (await confirmAction('Are you sure you want to update backstop token value?')) {
+        await updateBackstopTokenValue(addressBook);
+      }
+      break;
+    case poolOptions[3]: // Set status
+      if (await confirmAction('Are you sure you want to deploy treasury pool?')) {
+        await deployTreasuryPool(addressBook);
+      }
+      break;
+    case poolOptions[4]: // Add stablecoin
+      if (await confirmAction('Are you sure you want to set token admin to treasury pool?')) {
+        await setTokenAdminToTreasuryPool(addressBook);
+      }
+      break;
+    case poolOptions[5]: // Add to Reward Zone
+      if (await confirmAction('Are you sure you want to setup lending pool reserves?')) {
+        await setupLendingPoolReserves(addressBook);
+      }
+      break;
+    case poolOptions[6]: // Set Admin
+      if (await confirmAction('Are you sure you want to setup emissions on backstop?')) {
+        await setupEmissionsOnBackstop(addressBook);
+      }
+      break;
+    default:
+      console.log('Invalid action');
+  }
+}
+
 async function runCLI() {
   const { network } = await inquirer.prompt([
     {
@@ -95,13 +154,7 @@ async function runCLI() {
     'Initialize Orbit',
     'Deploy Token',
     'Deploy Pool',
-    'Set pool reserve',
-    'Set pool emmissions',
-    'Add to backstop of pool',
-    'Set pool status',
-    'Add stablecoin to pool',
-    'Add to Reward Zone',
-    'Revoke Admin',
+    'Pool Options',
     'Complete All Deployment Steps',
   ];
 
@@ -131,67 +184,36 @@ async function runCLI() {
       await deployTokenContract(addressBook, token_name); // This is not a SAC?
       break;
     case options[2]: // Deploy Pool
-        const { pool_name, backstop_take_rate, max_positions } = await inquirer.prompt([
-          {
-            type: 'input',
-            name: 'pool_name',
-            message: 'Enter the name of the pool:',
-          },
-          {
-            type: 'number',
-            name: 'backstop_take_rate',
-            message: 'Enter the backstop take rate (as a number):',
-          },
-          {
-            type: 'number',
-            name: 'max_positions',
-            message: 'Enter the maximum number of positions:',
-          },
-        ]);
-        await deployPool(addressBook, pool_name, backstop_take_rate, max_positions);
-  
-      break;
-    case options[3]: // Set pool reserve
-      const { pool_name } = await inquirer.prompt([
+      const { pool_name, backstop_take_rate, max_positions } = await inquirer.prompt([
         {
           type: 'input',
           name: 'pool_name',
           message: 'Enter the name of the pool:',
         },
+        {
+          type: 'number',
+          name: 'backstop_take_rate',
+          message: 'Enter the backstop take rate (as a number):',
+        },
+        {
+          type: 'number',
+          name: 'max_positions',
+          message: 'Enter the maximum number of positions:',
+        },
       ]);
-      await setPoolReserve(addressBook, pool_name);
+      await deployPool(addressBook, pool_name, backstop_take_rate, max_positions);
       break;
-    case options[4]: // Set pool emmissions
-      if (await confirmAction('Are you sure you want to mint LP tokens with blend?')) {
-        //await mintLPTokensWithBlend(addressBook);
-      }
+    case options[3]: // Pool Options
+      const { selected_pool_name } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'selected_pool_name',
+          message: 'Enter the name of the pool:',
+        },
+      ]);
+      await poolOptions(addressBook, selected_pool_name);
       break;
-    case options[5]: // Add to backstop of pool
-      if (await confirmAction('Are you sure you want to update backstop token value?')) {
-        await updateBackstopTokenValue(addressBook);
-      }
-      break;
-    case options[6]: // Set pool status
-      if (await confirmAction('Are you sure you want to deploy treasury pool?')) {
-        await deployTreasuryPool(addressBook);
-      }
-      break;
-    case options[7]: // Add stablecoin to pool
-      if (await confirmAction('Are you sure you want to set token admin to treasury pool?')) {
-        await setTokenAdminToTreasuryPool(addressBook);
-      }
-      break;
-    case options[8]: // Add to Reward Zone
-      if (await confirmAction('Are you sure you want to setup lending pool reserves?')) {
-        await setupLendingPoolReserves(addressBook);
-      }
-      break;
-    case options[9]: // Revoke Admin
-      if (await confirmAction('Are you sure you want to setup emissions on backstop?')) {
-        await setupEmissionsOnBackstop(addressBook);
-      }
-      break;
-    case options[10]: // Complete All Deployment Steps
+    case options[4]: // Complete All Deployment Steps
       if (await confirmAction('Are you sure you want to set lending pool status?')) {
         await setLendingPoolStatus(addressBook);
       }
