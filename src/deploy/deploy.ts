@@ -177,9 +177,19 @@ async function runCLI() {
 
   switch (action) {
     case options[0]: // Initialize Orbit
-      if (await confirmAction('Are you sure you want to initialize Orbit?')) {
-        await initializeOrbit(addressBook);
-      }
+      const {oracle_address, router_address} = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'oracle_address',
+          message: 'Enter the oracle address:',
+        },
+        {
+          type: 'input',
+          name: 'router_address',
+          message: 'Enter the router address:',
+        },
+      ]);
+      await initializeOrbit(addressBook, router_address, oracle_address);
       break;
     case options[1]: // Deploy Token
       const { token_name } = await inquirer.prompt([

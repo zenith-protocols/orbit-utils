@@ -33,6 +33,9 @@ import {
 } from '../utils/contract.js';
 import { tryDeployStellarAsset } from '../utils/stellar-asset.js';
 import { setupReserve } from '../utils/blend-pool/reserve-setup.js';
+import { BridgeOracleContract } from '../external/bridgeOracle.js';
+import { PegkeeperContract } from '../external/pegkeeper.js';
+import { TreasuryContract } from '../external/treasury.js';
 
 const mint_amount = BigInt(10_000e7);
 const pool_name = 'OrbitUSD';
@@ -53,7 +56,7 @@ const txParams: TxParams = {
   signerFunction: async (txXdr: string) => signWithKeypair(txXdr, config.passphrase, config.admin),
 };
 
-export async function initializeOrbit(addressBook: AddressBook) {
+export async function initializeOrbit(addressBook: AddressBook, router: string, oracle: string) {
   console.log('Deploying and initializing treasury factory...');
   await airdropAccount(config.admin);
 
@@ -62,9 +65,40 @@ export async function initializeOrbit(addressBook: AddressBook) {
   await bumpContractCode('pegkeeper', txParams);
   await bumpContractCode('bridgeOracle', txParams);
 
-  console.log('Deploying and Initializing Orbit');
+  console.log('Initializing Orbit');
+  const treasury = new TreasuryContract(config.treasury);
+  const pegkeeper = new PegkeeperContract(config.pegkeeper);
+  const bridgeOracle = new BridgeOracleContract(config.bridgeOracle);
   //TODO: Initialize orbit using config.admin
-  
+  await invokeSorobanOperation(
+    treasury.initialize({
+      admin: config.admin.publicKey(),
+      pegkeeper: config.pegkeeper,
+      bridge_oracle: config.bridgeOracle,
+    }),
+    TreasuryContract.parsers.initialize,
+    txParams
+  );
+
+  await invokeSorobanOperation(
+    pegkeeper.initialize({
+      admin: config.treasury,
+      router: router,
+    }),
+    PegkeeperContract.parsers.initialize,
+    txParams
+  );
+
+  await invokeSorobanOperation(
+    bridgeOracle.initialize({
+      admin: config.treasury,
+      oracle: oracle
+    }),
+    BridgeOracleContract.parsers.initialize,
+    txParams
+  );
+
+  console.log('Orbit initialized');
 }
 
 export async function deployTokenContract(addressBook: AddressBook, name: string) {
