@@ -4,18 +4,11 @@ import {
   PoolFactoryContract,
   ReserveConfig,
   ReserveEmissionMetadata,
-  parseError,
 } from '@blend-capital/blend-sdk';
 import { randomBytes } from 'crypto';
 import {Asset as TreasuryAsset} from '../external/treasury.js';
 import {
-  Address,
   Asset,
-  Operation,
-  xdr,
-  TransactionBuilder,
-  Transaction,
-  SorobanRpc,
 } from '@stellar/stellar-sdk';
 import { AddressBook } from '../utils/address-book.js';
 import { config } from '../utils/env_config.js';
@@ -34,9 +27,7 @@ import { setupReserve } from '../utils/blend-pool/reserve-setup.js';
 import { BridgeOracleContract } from '../external/bridgeOracle.js';
 import { PegkeeperContract } from '../external/pegkeeper.js';
 import { TreasuryContract } from '../external/treasury.js';
-
-const mint_amount = BigInt(10_000e7);
-const pool_name = 'OrbitUSD';
+import { TokenContract } from '../external/token.js';
 
 const txParams: TxParams = {
   account: await config.rpc.getAccount(config.admin.publicKey()),
@@ -97,6 +88,19 @@ export async function initializeOrbit(addressBook: AddressBook, router: string, 
   console.log('Orbit initialized');
 }
 
+export async function increaseSupply(addressBook: AddressBook, token: string, amount: number) {
+  console.log('Increasing supply...');
+  const treasury = new TreasuryContract(config.treasury);
+  await invokeSorobanOperation(
+    treasury.increase_supply({
+      token: addressBook.getContractId(token),
+      amount: BigInt(amount),
+    }),
+    TreasuryContract.parsers.increase_supply,
+    txParams
+  );
+}
+
 export async function deployTokenContract(addressBook: AddressBook, name: string) {
   console.log('Deploying token contract...');
   const token = new Asset(name, config.admin.publicKey());
@@ -111,11 +115,17 @@ export async function deployStablecoin(addressBook: AddressBook, token: string, 
   const treasury = new TreasuryContract(config.treasury);
   await invokeSorobanOperation(
     treasury.deploy_stablecoin({
-      token: token,
-      asset: asset,
-      blend_pool: blend_pool,
+      token: addressBook.getContractId(token),
+      blend_pool: addressBook.getContractId(blend_pool),
     }),
     TreasuryContract.parsers.deploy_stablecoin,
+    txParams
+  );
+
+  const tokenContract = new TokenContract(addressBook.getContractId(token));
+  await invokeSorobanOperation(
+    tokenContract.set_admin(config.treasury),
+    () => {},
     txParams
   );
 }
@@ -149,6 +159,19 @@ export async function deployPool(addressBook: AddressBook, name: string, backsto
   }
 
   console.log(`Successfully deployed ${deployPoolArgs.name} pool.`);
+}
+
+export async function lastPrice(addressBook: AddressBook, asset: TreasuryAsset) {
+  console.log('Getting last price...');
+  const bridgeOracle = new BridgeOracleContract(config.bridgeOracle);
+  const lastPrice = await invokeSorobanOperation(
+    bridgeOracle.lastprice({
+      asset: asset,
+    }),
+    BridgeOracleContract.parsers.lastprice,
+    txParams
+  );
+  console.log(`Last price: ${lastPrice}`);
 }
 
 export async function backstopDeposit(addressBook: AddressBook, pool: string, amount: number) {
@@ -197,19 +220,4 @@ export async function setPoolReserve(addressBook: AddressBook, pool_name: string
       },
       txParams
     );
-}
-
-
-export async function addPoolToRewardZone(addressBook: AddressBook, poolToRemove: string) {
-  console.log('Adding to reward zone...');
-  const backstop = new BackstopContract(config.backstop);
-  const newPool = new PoolContract(addressBook.getContractId(pool_name));
-  await invokeSorobanOperation(
-    backstop.addReward({
-      to_add: newPool.contractId(),
-      to_remove: addressBook.getContractId(poolToRemove),
-    }),
-    BackstopContract.parsers.addReward,
-    txParams
-  );
 }

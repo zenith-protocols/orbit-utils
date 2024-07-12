@@ -1,5 +1,4 @@
 import inquirer from 'inquirer';
-import fs from 'fs';
 import { AddressBook } from '../utils/address-book.js';
 import {
   deployPool,
@@ -9,8 +8,41 @@ import {
   setPoolStatus,
   setPoolReserve,
   backstopDeposit,
+  increaseSupply,
+  deployStablecoin,
+  lastPrice,
 } from './deployLogic.js';
 import { ReserveConfig, ReserveEmissionMetadata } from '@blend-capital/blend-sdk';
+import { Asset } from '../external/treasury.js';
+import { Address } from '@stellar/stellar-sdk';
+
+const assets: Asset[] = [
+  {
+    tag: "Other",
+    values: ["USD"],
+  },
+  {
+    tag: "Other",
+    values: ["EURC"],
+  },
+  {
+    tag: "Stellar",
+    values: [Address.fromString("CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC")]
+  },
+  {
+    tag: "Stellar",
+    values: [Address.fromString("CBGO6D5Q3SIPG6QHN2MJ5LQQ6XH2SRPKEB6PLRPS3KWDDPLBMDETEZRK")]
+  },
+  {
+    tag: "Stellar",
+    values: [Address.fromString("CAQCFVLOBK5GIULPNZRGATJJMIZL5BSP7X5YJVMGCPTUEPFM4AVSRCJU")]
+  },
+];
+
+const asset_choices = assets.flatMap(asset => asset.values.map(value => ({
+  name: `${asset.tag}: ${value}`,
+  value: asset,
+})));
 
 const reserve_configs: ReserveConfig[] = [
   {
@@ -20,38 +52,43 @@ const reserve_configs: ReserveConfig[] = [
     l_factor: 1_000_0000,
     util: 800_0000, // must be under 950_0000
     max_util: 1_000_0000, // must be greater than util
-    r_base: 100_000, // (0_0050000)
-    r_one: 400_000,
-    r_two: 2_000_000,
-    r_three: 7_500_000,
-    reactivity: 200, // must be 1000 or under
+    r_base: 40_0000, // (0_0050000)
+    r_one: 0,
+    r_two: 0,
+    r_three: 0,
+    reactivity: 0, // must be 1000 or under
   },
   {
     index: 0,
     decimals: 7,
-    c_factor: 8_900_000,
+    c_factor: 7_500_000,
     l_factor: 0,
     util: 0,
-    max_util: 0,
-    r_base: 100_000, // (0_0050000)
-    r_one: 400_000,
-    r_two: 2_000_000,
-    r_three: 7_500_000,
-    reactivity: 200,
+    max_util: 1_000_0000,
+    r_base: 40_0000, // (0_0050000)
+    r_one: 0,
+    r_two: 0,
+    r_three: 0,
+    reactivity: 0,
   },
 ];
+
+const reserve_config_choices = reserve_configs.map((config, index) => ({
+  name: `Config ${index + 1} - C Factor: ${config.c_factor}, L Factor: ${config.l_factor}`,
+  value: config,
+}));
 
 const poolEmissionMetadata: ReserveEmissionMetadata[] = [
   {
     res_index: 0, // first reserve
     res_type: 1, // 0 for d_token 1 for b_token
-    share: BigInt(0.5e7), // Share of total emissions
+    share: BigInt(1e7), // Share of total emissions
   },
   {
     res_index: 1, // second reserve
     res_type: 1, // 0 for d_token 1 for b_token
-    share: BigInt(0.5e7), // Share of total emissions
-  },
+    share: BigInt(0), // Share of total emissions
+  }
 ];
 
 async function confirmAction(message: string): Promise<boolean> {
@@ -102,7 +139,7 @@ async function poolOptions(addressBook: AddressBook, pool_name: string) {
           type: 'list',
           name: 'reserve_config',
           message: 'Select a reserve configuration:',
-          choices: reserve_configs,
+          choices: reserve_config_choices,
         },
       ]);
       await setPoolReserve(addressBook, pool_name, token, reserve_config);
@@ -163,7 +200,9 @@ async function runCLI() {
     'Deploy Token',
     'Deploy Pool',
     'Pool Options',
-    'Complete All Deployment Steps',
+    'Deploy stablecoin',
+    'Increase supply of token',
+    'Test Bridge Oracle',
   ];
 
   const { action } = await inquirer.prompt([
@@ -177,7 +216,7 @@ async function runCLI() {
 
   switch (action) {
     case options[0]: // Initialize Orbit
-      const {oracle_address, router_address} = await inquirer.prompt([
+      const { oracle_address, router_address } = await inquirer.prompt([
         {
           type: 'input',
           name: 'oracle_address',
@@ -231,8 +270,52 @@ async function runCLI() {
       ]);
       await poolOptions(addressBook, selected_pool_name);
       break;
-    case options[4]: // Complete All Deployment Steps
-      //TODO: Complete all deployment steps
+    case options[4]: // Deploy stablecoin
+      const { stablecoin_name, asset, blend_pool } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'stablecoin_name',
+          message: 'Enter the name of the stablecoin:',
+        },
+        {
+          type: 'list',
+          name: 'asset',
+          message: 'Enter the asset:',
+          choices: asset_choices,
+        },
+        {
+          type: 'input',
+          name: 'blend_pool',
+          message: 'Enter the blend pool:',
+        },
+      ]);
+      await deployStablecoin(addressBook, stablecoin_name, asset, blend_pool);
+      break;
+    case options[5]: // Increase supply of token
+      const { increase_token_name, amount } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'increase_token_name',
+          message: 'Enter the name of the token:',
+        },
+        {
+          type: 'number',
+          name: 'amount',
+          message: 'Enter the amount to increase supply by:',
+        },
+      ]);
+      await increaseSupply(addressBook, increase_token_name, amount);
+      break;
+    case options[6]: // Complete All Deployment Steps
+      const { asset_for_price } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'asset_for_price',
+          message: 'Enter the asset:',
+          choices: asset_choices,
+        },
+      ]);
+      await lastPrice(addressBook, asset_for_price);
       break;
     default:
       console.log('Invalid action');
@@ -242,4 +325,3 @@ async function runCLI() {
 runCLI().catch((error) => {
   console.error('Error:', error);
 });
-

@@ -2,7 +2,9 @@ import { i128 } from '@blend-capital/blend-sdk';
 import { Address, Contract } from '@stellar/stellar-sdk';
 import { Spec as ContractSpec } from '@stellar/stellar-sdk/contract';
 
-export type Asset = {tag: "Stellar", values: readonly [string]} | {tag: "Other", values: readonly [string]};
+export type Asset =
+  | { tag: 'Stellar'; values: readonly [Address] }
+  | { tag: 'Other'; values: readonly [string] };
 
 export interface TreasuryInitArgs {
     admin: Address | string;
@@ -12,7 +14,6 @@ export interface TreasuryInitArgs {
 
 export interface DeployStablecoinArgs {
     token: Address | string;
-    asset: Asset;
     blend_pool: Address | string;
 }
 
