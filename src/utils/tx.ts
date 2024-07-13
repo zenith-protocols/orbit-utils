@@ -16,13 +16,30 @@ export type TxParams = {
   txBuilderOptions: TransactionBuilder.TransactionBuilderOptions;
 };
 
+/**
+ * Signs a Stellar transaction with a given Keypair.
+ * @param {string} txXdr - The transaction in XDR format.
+ * @param {string} passphrase - The network passphrase.
+ * @param {Keypair} source - The Keypair to sign the transaction with.
+ * @returns {Promise<string>} The signed transaction in XDR format.
+ */
 export async function signWithKeypair(
   txXdr: string,
   passphrase: string,
   source: Keypair
 ): Promise<string> {
   const tx = new Transaction(txXdr, passphrase);
+  // Retrieve the transaction hash used for signatures.
+  const txHash = tx.hash();
+  console.log(`txhash in signer: ${txHash.toString('hex')}`);
+  const sourceKeypair = Keypair.fromPublicKey(tx.source);
+
   tx.sign(source);
+  const signed = tx.signatures.some((signature) => {
+    // Verify the signature with the source account's public key.
+    return sourceKeypair.verify(txHash, signature.signature());
+  });
+  console.log(`Was it signed in the signer function? ${signed}`);
   return tx.toXDR();
 }
 
@@ -120,7 +137,7 @@ export async function invokeClassicOp(operation: string, txParams: TxParams) {
   try {
     await sendTransaction(signedTx, () => undefined);
   } catch (e) {
-    console.error(e);
+    console.error('Error submitting classic operation: ', e);
     throw Error('failed to submit classic op TX');
   }
 }

@@ -19,7 +19,7 @@ export async function setupPool(
   }
   addressBook.setContractId(deployPoolArgs.name, poolAddress);
   addressBook.writeToFile();
-  await bumpContractInstance(deployPoolArgs.name, txParams, addressBook);
+  await bumpContractInstance(deployPoolArgs.name, txParams);
   console.log(`Successfully deployed ${deployPoolArgs.name} pool.\n`);
   return new PoolContract(poolAddress);
 }

@@ -1,44 +1,16 @@
 import { Address, Keypair, Operation, StrKey, hash, xdr } from '@stellar/stellar-sdk';
 import { randomBytes } from 'crypto';
-import { readFileSync } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { addressBook } from './address-book.js';
 import { config } from './env_config.js';
 import { TxParams, invokeSorobanOperation } from './tx.js';
 
-// Relative paths from __dirname
-const CONTRACT_REL_PATH: object = {
-  token: '../../src/external/token.wasm',
-  comet: '../../' + config.comet_wasm_rel_path + 'comet.wasm',
-  cometFactory: '../../' + config.comet_wasm_rel_path + 'comet_factory.wasm',
-  oraclemock: '../../src/external/oracle.wasm',
-  emitter: '../../' + config.blend_wasm_rel_path + 'emitter.wasm',
-  poolFactory: '../../' + config.blend_wasm_rel_path + 'pool_factory.wasm',
-  backstop: '../../' + config.blend_wasm_rel_path + 'backstop.wasm',
-  lendingPool: '../../' + config.blend_wasm_rel_path + 'pool.wasm',
-  tokenLockup: '../../' + config.token_lockup_wasm_rel_path + 'token_lockup.wasm',
-  blendLockup: '../../' + config.blend_lockup_wasm_rel_path + 'blend_lockup.wasm',
-};
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export async function installContract(wasmKey: string, txParams: TxParams): Promise<Buffer> {
-  const contractWasm = readFileSync(
-    path.join(__dirname, CONTRACT_REL_PATH[wasmKey as keyof object])
-  );
-  const wasmHash = hash(contractWasm);
-  addressBook.setWasmHash(wasmKey, wasmHash.toString('hex'));
-  const op = Operation.invokeHostFunction({
-    func: xdr.HostFunction.hostFunctionTypeUploadContractWasm(contractWasm),
-    auth: [],
-  });
-  await invokeSorobanOperation(op.toXDR('base64'), () => undefined, txParams);
-  addressBook.writeToFile();
-  return wasmHash;
-}
-
+/**
+ * Deploys a contract instance on the blockchain.
+ * @param {string} contractKey - Key to store the deployed contract's ID in the addressbook.
+ * @param {string} wasmKey - Key to fetch the WASM hash used for deployment.
+ * @param {TxParams} txParams - Transaction parameters.
+ * @returns {Promise<string>} The contract ID of the deployed instance.
+ */
 export async function deployContract(
   contractKey: string,
   wasmKey: string,
@@ -61,7 +33,9 @@ export async function deployContract(
   );
   const contractId = StrKey.encodeContract(hash(hashIdPreimage.toXDR()));
   addressBook.setContractId(contractKey, contractId);
+  console.log('set the id', contractId);
   const wasmHash = Buffer.from(addressBook.getWasmHash(wasmKey), 'hex');
+  console.log('set thewasmhash', wasmHash);
 
   const deployFunction = xdr.HostFunction.hostFunctionTypeCreateContract(
     new xdr.CreateContractArgs({
@@ -140,6 +114,12 @@ export async function bumpContractCode(wasmKey: string, txParams: TxParams) {
   );
 }
 
+/**
+ * Bumps the data of a deployed contract by extending its ledger footprint TTL.
+ * @param {string} contractKey - Key identifying the contract.
+ * @param {xdr.ScVal} dataKey - Specific data key within the contract to bump.
+ * @param {TxParams} txParams - Transaction parameters.
+ */
 export async function bumpContractData(
   contractKey: string,
   dataKey: xdr.ScVal,
@@ -176,6 +156,12 @@ export async function bumpContractData(
   );
 }
 
+/**
+ * Restores the data of a deployed contract to its state prior to being extended.
+ * @param {string} contractKey - Key identifying the contract.
+ * @param {xdr.ScVal} dataKey - Specific data key within the contract to restore.
+ * @param {TxParams} txParams - Transaction parameters.
+ */
 export async function restoreContractData(
   contractKey: string,
   dataKey: xdr.ScVal,
@@ -212,6 +198,10 @@ export async function restoreContractData(
   );
 }
 
+/**
+ * Requests an airdrop to fund a Stellar account using the network's friendbot.
+ * @param {Keypair} user - The Stellar Keypair object of the user to fund.
+ */
 export async function airdropAccount(user: Keypair) {
   try {
     console.log('Start funding');
