@@ -1,116 +1,93 @@
-# Treasury Factory Deployment Guide
+# Deployment Script for Blockchain Contracts
 
-This guide outlines the procedures to deploy and interact with the Treasury Factory using the `TreasuryFactoryConfig` and `TreasuryFactoryContract` classes.
+This repository contains a deployment script for the orbit protocol, providing functionalities for initializing, deploying, and managing various contract operations. The main entry point for the functionality is the deploy script, which guides the user through various actions using a command-line interface (CLI).
 
 ## Table of Contents
+- [Configuration](#configuration)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Available Actions](#available-actions)
+  - [Main Options](#main-options)
+  - [Pool Options](#pool-options)
+  - [Treasury Options](#treasury-options)
+  - [Bridge Oracle Options](#bridge-oracle-options)
 
-- [Treasury Factory Deployment Guide](#treasury-factory-deployment-guide)
-  - [Table of Contents](#table-of-contents)
-  - [Prerequisites](#prerequisites)
-  - [Using the CLI Tool](#using-the-cli-tool)
-  - [Setting Up the Configuration](#setting-up-the-configuration)
-    - [Loading Configuration](#loading-configuration)
-  - [Deploying a Treasury](#deploying-a-treasury)
-    - [Example Deployment](#example-deployment)
-  - [Admin Operations](#admin-operations)
-    - [Setting a New Admin](#setting-a-new-admin)
-  - [Troubleshooting](#troubleshooting)
+## Configuration
 
-## Prerequisites
+The script uses a configuration file to manage network-specific settings and credentials. Ensure that you create a `<selected network>.contracts.json` file with the following content:
 
-Ensure you have the following before you start:
-
-- Node.js installed.
-- Stellar SDK and the custom SDK (`@blend-capital/blend-sdk`) installed.
-- Access to a Stellar testnet or mainnet horizon server.
-
-## Using the CLI Tool
-
-Run `npm install`
-Run `npm run deploy`
-the scripts are located in the deploy folder
-The minting LP is still not fully working.
-
-## Setting Up the Configuration
-
-Before interacting with the treasury factory, load the existing configuration or set up a new configuration. This involves updating the appropriate contract addresses in the addresssbook.
-### Loading Configuration
-
-Here's how to load the existing configuration of a Treasury Factory:
-
-```javascript
-import { TreasuryFactoryConfig, Network } from './path_to_your_modules';
-
-async function loadConfig() {
-    const network = {
-        rpc: 'https://horizon-testnet.stellar.org',
-        passphrase: 'Test SDF Network ; September 2015',
-    };
-    const treasuryFactoryId = 'G...'; // Replace with your contract address
-
-    try {
-        const config = await TreasuryFactoryConfig.load(network, treasuryFactoryId);
-        console.log('Config loaded:', config);
-    } catch (error) {
-        console.error('Failed to load config:', error);
-    }
-}
-
-loadConfig();
-```
-
-## Deploying a Treasury
-
-To deploy a new treasury, you need to use the `TreasuryFactoryContract` class. This involves creating an instance of the contract and calling the deploy function with necessary parameters.
-
-### Example Deployment
-
-```javascript
-import { TreasuryFactoryContract, TreasuryInitMeta } from './path_to_your_modules';
-import { Address } from '@stellar/stellar-sdk'; // Import Address from Stellar SDK
-
-async function deployTreasury() {
-    const contractAddress = 'G...'; // Your TreasuryFactoryContract's address
-    const treasuryFactory = new TreasuryFactoryContract(contractAddress);
-
-    const salt = Buffer.from('your_salt_here', 'hex');
-    const tokenAddress = new Address('G...token_address');
-    const blendPool = new Address('G...blend_pool_address');
-
-    try {
-        const deployResult = await treasuryFactory.deploy(salt, tokenAddress, blendPool);
-        console.log('Treasury deployed at:', deployResult);
-    } catch (error) {
-        console.error('Deployment failed:', error);
-    }
-}
-
-deployTreasury();
-```
-
-## Admin Operations
-
-Admin operations include setting a new admin and modifying other contract parameters. These operations are critical and should be performed with caution.
-
-### Setting a New Admin
-
-```javascript
-async function setNewAdmin(treasuryFactory, newAdminAddress) {
-    try {
-        const result = await treasuryFactory.setAdmin(newAdminAddress);
-        console.log('Admin updated successfully:', result);
-    } catch (error) {
-        console.error('Failed to set new admin:', error);
-    }
+```json
+{
+  "contracts": {
+    "backstop": "address",
+    "poolFactory": "address",
+    "treasury": "address",
+    "pegkeeper": "address",
+    "bridgeOracle": "address",
+    "router": "address"
+  },
+  "tokens": {}
 }
 ```
 
-## Troubleshooting
+## Usage
+### Build
+```sh
+npm run build
+```
+### Run
+```sh
+node lib/deploy/deploy.js
+```
 
-If you encounter issues during the deployment or operation, consider checking the following:
+## Available Actions
 
-- Ensure that the network and contract addresses are correct.
-- Verify that the parameters passed to functions are of the correct type and format.
-- Consult the Stellar Laboratory or similar tools to trace transaction failures.
+### Main Options
 
-For more information, refer to the official Stellar documentation and the respective SDK docs.
+1. **Initialize Orbit**: Initializes the orbit with the given oracle address.
+   - Parameters: `oracle_address`
+2. **Deploy Token**: Deploys a new token contract.
+   - Parameters: `token_name`
+3. **Deploy Pool**: Deploys a new pool with the specified parameters.
+   - Parameters: `pool_name`, `backstop_take_rate`, `max_positions`
+4. **Pool Options**: Manage pool-specific operations such as setting reserves, emissions, and statuses.
+   - Sub-options: `Set reserve`, `Set emissions`, `Add to backstop`, `Set status`, `Add to Reward Zone`, `Set Admin`
+5. **Treasury Options**: Manage treasury-specific operations like adding stablecoins, increasing supply, setting pegkeeper, and setting admin.
+   - Sub-options: `Add Stablecoin`, `Increase Supply`, `Set Pegkeeper`, `Set Treasury Admin`
+6. **Bridge Oracle Options**: Manage bridge oracle-specific operations like adding assets, getting the last price, and setting the oracle.
+   - Sub-options: `Add Bridge Oracle Asset`, `Get Last Price`, `Set Oracle`
+
+### Pool Options
+
+1. **Set reserve**: Set the reserve configuration for a pool.
+   - Parameters: `token`, `reserve_config`
+2. **Set emissions**: Set the emissions configuration for a pool.
+   - Parameters: `poolEmissionMetadata`
+3. **Add to backstop**: Add funds to the backstop for a pool.
+   - Parameters: `backstop_amount`
+4. **Set status**: Set the status of a pool.
+   - Parameters: `status`
+5. **Add to Reward Zone**: Add a pool to the reward zone.
+   - Parameters: `pool_name`, `pool_to_remove`
+6. **Set Admin**: Set the admin for a pool.
+   - Parameters: `new_admin`
+
+### Treasury Options
+
+1. **Add Stablecoin**: Add a new stablecoin to the treasury.
+   - Parameters: `stablecoin_name`, `blend_pool`, `asset`
+2. **Increase Supply**: Increase the supply of a specified token.
+   - Parameters: `increase_token_name`, `amount`
+3. **Set Pegkeeper**: Set the pegkeeper for the treasury.
+   - Parameters: `pegkeeper`
+4. **Set Treasury Admin**: Set the admin for the treasury.
+   - Parameters: `new_admin`
+
+### Bridge Oracle Options
+
+1. **Add Bridge Oracle Asset**: Add a new asset to the bridge oracle.
+   - Parameters: `from_asset`, `to_asset`
+2. **Get Last Price**: Retrieve the last price for an asset from the bridge oracle.
+   - Parameters: `asset_for_price`
+3. **Set Oracle**: Set the oracle address.
+   - Parameters: `oracle_address`
