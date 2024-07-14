@@ -6,13 +6,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class AddressBook {
-  private ids: Map<string, string>;
-  private hashes: Map<string, string>;
+  private tokens: Map<string, string>;
+  private contracts: Map<string, string>;
   private fileName: string;
 
-  constructor(ids: Map<string, string>, hashes: Map<string, string>, fileName: string) {
-    this.ids = ids;
-    this.hashes = hashes;
+  constructor(tokens: Map<string, string>, contracts: Map<string, string>, fileName: string) {
+    this.tokens = tokens;
+    this.contracts = contracts;
     this.fileName = fileName;
   }
 
@@ -22,14 +22,14 @@ export class AddressBook {
    * @param network - The network to load the contracts for
    * @returns Contracts object loaded based on the network
    */
-  static loadFromFile(network: string) {
+  static loadFromFile(network: string): AddressBook {
     const fileName = `../../${network}.contracts.json`;
     try {
       const contractFile = readFileSync(path.join(__dirname, fileName));
       const contractObj = JSON.parse(contractFile.toString());
       return new AddressBook(
-        new Map(Object.entries(contractObj.ids)),
-        new Map(Object.entries(contractObj.hashes)),
+        new Map(Object.entries(contractObj.tokens)),
+        new Map(Object.entries(contractObj.contracts)),
         fileName
       );
     } catch {
@@ -57,61 +57,72 @@ export class AddressBook {
   }
 
   /**
-   * Get the hex encoded contractId for a given contractKey
+   * Get the token for a given contractKey
    * @param contractKey - The name of the contract
-   * @returns Hex encoded contractId
+   * @returns Token
    */
-  getContractId(contractKey: string) {
-    const contractId = this.ids.get(contractKey);
+  getToken(contractKey: string): string {
+    const token = this.tokens.get(contractKey);
 
-    if (contractId != undefined) {
-      return contractId;
+    if (token != undefined) {
+      return token;
     } else {
-      console.error(`unable to find address for ${contractKey} in ${this.fileName}`);
-      throw Error();
+      console.error(`unable to find token for ${contractKey} in ${this.fileName}`);
+      throw new Error(`Unable to find token for ${contractKey}`);
     }
   }
 
   /**
-   * Set the hex encoded contractId for a given contractKey
+   * Set the token for a given contractKey
    * @param contractKey - The name of the contract
-   * @param contractId Hex encoded contractId
+   * @param token - Token
    */
-  setContractId(contractKey: string, contractId: string) {
-    this.ids.set(contractKey, contractId);
-    console.warn(`set contractid ${contractKey}, ${contractId}`);
+  setToken(contractKey: string, token: string) {
+    this.tokens.set(contractKey, token);
+    console.warn(`set token ${contractKey}, ${token}`);
     this.writeToFile();
   }
 
   /**
-   * Get the hex encoded wasmHash for a given contractKey
+   * Get the contract for a given contractKey
    * @param contractKey - The name of the contract
-   * @returns Hex encoded wasmHash
+   * @returns Contract
    */
-  getWasmHash(contractKey: string) {
-    const washHash = this.hashes.get(contractKey);
+  getContract(contractKey: string): string {
+    const contract = this.contracts.get(contractKey);
 
-    if (washHash != undefined) {
-      return washHash;
+    if (contract != undefined) {
+      return contract;
     } else {
-      console.error(`unable to find hash for ${contractKey} in ${this.fileName}`);
-      throw Error();
+      console.error(`unable to find contract for ${contractKey} in ${this.fileName}`);
+      throw new Error(`Unable to find contract for ${contractKey}`);
     }
   }
 
   /**
-   * Set the hex encoded wasmHash for a given contractKey
+   * Set the contract for a given contractKey
    * @param contractKey - The name of the contract
-   * @param wasmHash - Hex encoded wasmHash
+   * @param contract - Contract
    */
-  setWasmHash(contractKey: string, wasmHash: string) {
-    this.hashes.set(contractKey, wasmHash);
-    console.warn(`set wasm hash ${contractKey}, ${wasmHash}`);
+  setContract(contractKey: string, contract: string) {
+    this.contracts.set(contractKey, contract);
+    console.warn(`set contract ${contractKey}, ${contract}`);
+    this.writeToFile();
+  }
+
+  /**
+   * Get all token keys
+   * @returns An array of all token keys
+   */
+  getTokenKeys(): string[] {
+    return Array.from(this.tokens.keys());
+  }
+
+  /**
+   * Get all contract keys
+   * @returns An array of all contract keys
+   */
+  getContractKeys(): string[] {
+    return Array.from(this.contracts.keys());
   }
 }
-
-const network = process.argv[2];
-if (network == undefined || network == '') {
-  throw new Error('Error: Network argument required');
-}
-export const addressBook = AddressBook.loadFromFile(network);

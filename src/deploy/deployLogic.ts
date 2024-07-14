@@ -4,9 +4,10 @@ import {
   PoolFactoryContract,
   ReserveConfig,
   ReserveEmissionMetadata,
+  SetReserveArgs,
 } from '@blend-capital/blend-sdk';
 import { randomBytes } from 'crypto';
-import {Asset as TreasuryAsset} from '../external/treasury.js';
+import {Asset as BridgeAsset} from '../external/bridgeOracle.js';
 import {
   Asset,
 } from '@stellar/stellar-sdk';
@@ -18,16 +19,13 @@ import {
   invokeSorobanOperation,
 } from '../utils/tx.js';
 import {
-  airdropAccount,
-  bumpContractCode,
   bumpContractInstance,
 } from '../utils/contract.js';
-import { tryDeployStellarAsset } from '../utils/stellar-asset.js';
-import { setupReserve } from '../utils/blend-pool/reserve-setup.js';
 import { BridgeOracleContract } from '../external/bridgeOracle.js';
 import { PegkeeperContract } from '../external/pegkeeper.js';
 import { TreasuryContract } from '../external/treasury.js';
 import { TokenContract } from '../external/token.js';
+import { deployStellarAsset } from '../utils/stellar-asset.js';
 
 const txParams: TxParams = {
   account: await config.rpc.getAccount(config.admin.publicKey()),
@@ -42,26 +40,25 @@ const txParams: TxParams = {
   signerFunction: async (txXdr: string) => signWithKeypair(txXdr, config.passphrase, config.admin),
 };
 
-export async function initializeOrbit(addressBook: AddressBook, router: string, oracle: string) {
-  console.log('Deploying and initializing treasury factory...');
-  await airdropAccount(config.admin);
+// Treasury
 
-  console.log('Installing Orbit Contracts');
-  await bumpContractCode('treasury', txParams);
-  await bumpContractCode('pegkeeper', txParams);
-  await bumpContractCode('bridgeOracle', txParams);
-
+export async function initializeOrbit(addressBook: AddressBook, oracle: string) {
   console.log('Initializing Orbit');
-  const treasury = new TreasuryContract(config.treasury);
-  const pegkeeper = new PegkeeperContract(config.pegkeeper);
-  const bridgeOracle = new BridgeOracleContract(config.bridgeOracle);
+
+  const treasuryAddress = addressBook.getContract('treasury');
+  const pegkeeperAddress = addressBook.getContract('pegkeeper');
+  const bridgeOracleAddress = addressBook.getContract('bridgeOracle');
+  const adminAddress = config.admin.publicKey();
+
+  const treasury = new TreasuryContract(treasuryAddress);
+  const pegkeeper = new PegkeeperContract(pegkeeperAddress);
+  const bridgeOracle = new BridgeOracleContract(bridgeOracleAddress);
   
   //TODO: Initialize orbit using config.admin
   await invokeSorobanOperation(
     treasury.initialize({
-      admin: config.admin.publicKey(),
-      pegkeeper: config.pegkeeper,
-      bridge_oracle: config.bridgeOracle,
+      admin: adminAddress,
+      pegkeeper: pegkeeperAddress,
     }),
     TreasuryContract.parsers.initialize,
     txParams
@@ -69,8 +66,8 @@ export async function initializeOrbit(addressBook: AddressBook, router: string, 
 
   await invokeSorobanOperation(
     pegkeeper.initialize({
-      admin: config.treasury,
-      router: router,
+      admin: treasuryAddress,
+      router: addressBook.getContract("router"),
     }),
     PegkeeperContract.parsers.initialize,
     txParams
@@ -78,7 +75,7 @@ export async function initializeOrbit(addressBook: AddressBook, router: string, 
 
   await invokeSorobanOperation(
     bridgeOracle.initialize({
-      admin: config.treasury,
+      admin: adminAddress,
       oracle: oracle
     }),
     BridgeOracleContract.parsers.initialize,
@@ -90,134 +87,279 @@ export async function initializeOrbit(addressBook: AddressBook, router: string, 
 
 export async function increaseSupply(addressBook: AddressBook, token: string, amount: number) {
   console.log('Increasing supply...');
-  const treasury = new TreasuryContract(config.treasury);
+  const treasury = new TreasuryContract(addressBook.getContract('treasury'));
   await invokeSorobanOperation(
-    treasury.increase_supply({
-      token: addressBook.getContractId(token),
+    treasury.increaseSupply({
+      token: addressBook.getToken(token),
       amount: BigInt(amount),
     }),
-    TreasuryContract.parsers.increase_supply,
+    TreasuryContract.parsers.increaseSupply,
     txParams
   );
+}
+
+export async function addStablecoin(addressBook: AddressBook, token: string, blend_pool: string) {
+  console.log('Adding stablecoin to treasury new stablecoin...');
+  const treasury = new TreasuryContract(addressBook.getContract('treasury'));
+
+  const tokenContract = new TokenContract(addressBook.getToken(token));
+  try {
+    await invokeSorobanOperation(
+      tokenContract.set_admin(treasury.contractId()),
+      () => {},
+      txParams
+    );
+    console.log(`Successfully set ${treasury.contractId()} as admin of ${tokenContract.contractId()}`);
+  } catch (e) {
+    console.log('Failed to set admin', e);
+  }
+
+  try {
+    await invokeSorobanOperation(
+      treasury.addStablecoin({
+        token: addressBook.getToken(token),
+        blend_pool: addressBook.getContract(blend_pool),
+      }),
+      TreasuryContract.parsers.addStablecoin,
+      txParams
+    );
+    console.log(`Successfully added ${token} to treasury.\n`);
+  }
+  catch (e) {
+    console.log('Failed to add stablecoin', e);
+  }
+}
+
+export async function setPegkeeper(addressBook: AddressBook, pegkeeper: string) {
+  console.log('Setting pegkeeper...');
+  const treasury = new TreasuryContract(addressBook.getContract('treasury'));
+  try {
+    await invokeSorobanOperation(
+      treasury.setPegkeeper({
+        pegkeeper: pegkeeper,
+      }),
+      TreasuryContract.parsers.setPegkeeper,
+      txParams
+    );
+    addressBook.setContract('pegkeeper', pegkeeper);
+    addressBook.writeToFile();
+    console.log(`Successfully set ${pegkeeper} as pegkeeper.\n`);
+  } catch (e) {
+    console.log('Failed to set pegkeeper', e);
+  }
+}
+
+export async function setTreasuryAdmin(addressBook: AddressBook, admin: string) {
+  console.log('Setting admin...');
+  const treasury = new TreasuryContract(addressBook.getContract('treasury'));
+  try {
+    await invokeSorobanOperation(
+      treasury.setAdmin({
+        admin: admin,
+      }),
+      TreasuryContract.parsers.setAdmin,
+      txParams
+    );
+    console.log(`Successfully set ${admin} as admin.\n`);
+  } catch (e) {
+    console.log('Failed to set admin', e);
+  }
+}
+
+// Bridge Oracle
+
+export async function addBridgeOracleAsset(addressBook: AddressBook, asset: BridgeAsset, to: BridgeAsset) {
+  console.log('Adding bridge oracle asset...');
+  const bridgeOracle = new BridgeOracleContract(addressBook.getContract('bridgeOracle'));
+  try {
+    await invokeSorobanOperation(
+      bridgeOracle.addAsset({
+        asset: asset,
+        to: to,
+      }),
+      BridgeOracleContract.parsers.addAsset,
+      txParams
+    );
+    console.log(`Successfully added ${asset} to ${to} bridge oracle.\n`);
+  } catch (e) {
+    console.log('Failed to add asset', e);
+  }
 }
 
 export async function deployTokenContract(addressBook: AddressBook, name: string) {
   console.log('Deploying token contract...');
   const token = new Asset(name, config.admin.publicKey());
-  const tokenContract = await tryDeployStellarAsset(token, txParams, addressBook);
-  addressBook.setContractId(name, tokenContract.address.toString());
-  await bumpContractInstance(name, txParams);
+
+  try {
+    await deployStellarAsset(token, txParams, addressBook);
+    console.log(`Successfully deployed ${name} token contract.\n`);
+  } catch (e) {
+    console.log('Failed to deploy token contract', e);
+  }
 }
 
-export async function deployStablecoin(addressBook: AddressBook, token: string, asset: TreasuryAsset, blend_pool: string) {
-  console.log('Deploying new stablecoin...');
-
-  const treasury = new TreasuryContract(config.treasury);
-  await invokeSorobanOperation(
-    treasury.deploy_stablecoin({
-      token: addressBook.getContractId(token),
-      blend_pool: addressBook.getContractId(blend_pool),
-    }),
-    TreasuryContract.parsers.deploy_stablecoin,
-    txParams
-  );
-
-  const tokenContract = new TokenContract(addressBook.getContractId(token));
-  await invokeSorobanOperation(
-    tokenContract.set_admin(config.treasury),
-    () => {},
-    txParams
-  );
+export async function lastPrice(addressBook: AddressBook, asset: BridgeAsset) {
+  console.log('Getting last price...');
+  const bridgeOracle = new BridgeOracleContract(addressBook.getContract('bridgeOracle'));
+  try {
+    const lastprice = await invokeSorobanOperation(
+      bridgeOracle.lastPrice({
+        asset: asset,
+      }),
+      BridgeOracleContract.parsers.lastPrice,
+      txParams
+    );
+    console.log(`Successfully got last price: ${lastPrice}\n`);
+  } catch (e) {
+    console.log('Failed to get last price', e);
+  }
 }
 
+
+// Pool
 export async function deployPool(addressBook: AddressBook, name: string, backstop_take_rate: number, max_positions: number) {
   console.log('Deploying pool...');
-  const poolFactory = new PoolFactoryContract(config.pool_factory);
-  const backstop = new BackstopContract(config.backstop);
+
+  const poolFactory = new PoolFactoryContract(addressBook.getContract('poolFactory'));
 
   const poolSalt = randomBytes(32);
   const deployPoolArgs = {
     admin: config.admin.publicKey(),
     name: name,
     salt: poolSalt,
-    oracle: config.bridgeOracle,
+    oracle: addressBook.getContract('bridge_oracle'),
     backstop_take_rate: backstop_take_rate * 10000000,
     max_positions,
   };
+
   const poolAddress = await invokeSorobanOperation(
     poolFactory.deploy(deployPoolArgs),
     PoolFactoryContract.parsers.deploy,
     txParams
   );
-
-  if (poolAddress) {
-    addressBook.setContractId(name, poolAddress);
-    addressBook.writeToFile();
-  } else {
-    console.error('The poolAddress did not get generated');
-    return;
+  if (!poolAddress) {
+    throw new Error('Failed to deploy pool');
   }
-
-  console.log(`Successfully deployed ${deployPoolArgs.name} pool.`);
-}
-
-export async function lastPrice(addressBook: AddressBook, asset: TreasuryAsset) {
-  console.log('Getting last price...');
-  const bridgeOracle = new BridgeOracleContract(config.bridgeOracle);
-  const lastPrice = await invokeSorobanOperation(
-    bridgeOracle.lastprice({
-      asset: asset,
-    }),
-    BridgeOracleContract.parsers.lastprice,
-    txParams
-  );
-  console.log(`Last price: ${lastPrice}`);
+  addressBook.setContract(deployPoolArgs.name, poolAddress);
+  addressBook.writeToFile();
+  await bumpContractInstance(poolAddress, txParams);
+  console.log(`Successfully deployed ${deployPoolArgs.name} pool.\n`);
 }
 
 export async function backstopDeposit(addressBook: AddressBook, pool: string, amount: number) {
   console.log('Depositing to backstop...');
-  const backstop = new BackstopContract(config.backstop);
-  await invokeSorobanOperation(
-    backstop.deposit({
-      from: config.admin.publicKey(),
-      pool_address: addressBook.getContractId(pool),
-      amount: BigInt(amount),
-    }),
-    BackstopContract.parsers.deposit,
-    txParams
-  );
+  const backstop = new BackstopContract(addressBook.getContract('backstop'));
+  try {
+    await invokeSorobanOperation(
+      backstop.deposit({
+        from: config.admin.publicKey(),
+        pool_address: addressBook.getContract(pool),
+        amount: BigInt(amount),
+      }),
+      BackstopContract.parsers.deposit,
+      txParams
+    );
+    console.log(`Successfully deposited ${amount} to backstop.\n`);
+  } catch (e) {
+    console.log('Failed to deposit to backstop', e);
+  }
 }
 
 export async function setPoolEmmision(addressBook: AddressBook, pool: string, emission: ReserveEmissionMetadata[]) {
   console.log('Setting pool emission...');
-  const newPool = new PoolContract(addressBook.getContractId(pool));
-  await invokeSorobanOperation(
-    newPool.setEmissionsConfig(emission),
-    PoolContract.parsers.setEmissionsConfig,
-    txParams
-  );
+  const newPool = new PoolContract(addressBook.getContract(pool));
+  try {
+    await invokeSorobanOperation(
+      newPool.setEmissionsConfig(emission),
+      PoolContract.parsers.setEmissionsConfig,
+      txParams
+    );
+    console.log(`Successfully set emission.\n`);
+  } catch (e) {
+    console.log('Failed to set emission', e);
+  }
 }
 
 export async function setPoolStatus(addressBook: AddressBook, pool: string, status: number) {
   console.log('Setting pool status...');
-  const newPool = new PoolContract(addressBook.getContractId(pool));
-  await invokeSorobanOperation(
-    newPool.setStatus(status),
-    PoolContract.parsers.setStatus,
-    txParams
-  );
-
-}
-
-export async function setPoolReserve(addressBook: AddressBook, pool_name: string, token: string, reserve_config: ReserveConfig) {
-  console.log('Setting up lending pool reserves...');
-  const newPool = new PoolContract(addressBook.getContractId(pool_name));
-    await setupReserve(
-      newPool.contractId(),
-      {
-        asset: addressBook.getContractId(token),
-        metadata: reserve_config,
-      },
+  const newPool = new PoolContract(addressBook.getContract(pool));
+  try {
+    await invokeSorobanOperation(
+      newPool.setStatus(status),
+      PoolContract.parsers.setStatus,
       txParams
     );
+    console.log(`Successfully set status to ${status}.\n`);
+  } catch (e) {
+    console.log('Failed to set status', e);
+  }
+}
+
+export async function setPoolReserve(addressBook: AddressBook, poolName: string, token: string, reserve_config: ReserveConfig) {
+  console.log('Setting up pool reserve...');
+  const pool = new PoolContract(addressBook.getContract(poolName));
+
+  const initReserveArgs: SetReserveArgs = {
+    asset: addressBook.getToken(token),
+    metadata: reserve_config,
+  };
+  console.log('queuing set reserves', initReserveArgs);
+  try {
+    await invokeSorobanOperation(
+      pool.queueSetReserve(initReserveArgs),
+      PoolContract.parsers.queueSetReserve,
+      txParams
+    );
+    console.log(`Successfully queued ${initReserveArgs.asset} reserve.\n`);
+  } catch (e) {
+    console.log('Reserve not queued', e);
+  }
+
+  // @DEV Setting reserve can fail if the queue time not reached
+  try {
+    await invokeSorobanOperation(
+      pool.setReserve(initReserveArgs.asset),
+      PoolContract.parsers.setReserve,
+      txParams
+    );
+    console.log(`Successfully set ${initReserveArgs.asset} reserve.\n`);
+  } catch (e) {
+    console.log('Reserve not set', e);
+  }
+}
+
+export async function setPoolAdmin(addressBook: AddressBook, poolName: string, newAdmin: string) {
+  console.log('Setting pool admin...');
+  const pool = new PoolContract(addressBook.getContract(poolName));
+  try {
+    await invokeSorobanOperation(
+      pool.setAdmin(newAdmin),
+      PoolContract.parsers.setAdmin,
+      txParams
+    );
+    console.log(`Successfully set ${newAdmin} as admin.\n`);
+  } catch (e) {
+    console.log('Failed to set admin', e);
+  }
+}
+
+export async function addPoolToRewardZone(addressBook: AddressBook, poolName: string, poolToRemove: string) {
+  console.log('Adding to reward zone...');
+  if (poolToRemove === '') {
+    poolToRemove = addressBook.getContract(poolName);
+  }
+  const backstop = new BackstopContract(addressBook.getContract('backstop'));
+  try {
+    await invokeSorobanOperation(
+      backstop.addReward({
+        to_add: addressBook.getContract(poolName),
+        to_remove: poolToRemove,
+      }),
+      BackstopContract.parsers.addReward,
+      txParams
+    );
+    console.log(`Successfully added ${poolToRemove} to reward zone.\n`);
+  } catch (e) {
+    console.log('Failed to add to reward zone', e);
+  }
 }

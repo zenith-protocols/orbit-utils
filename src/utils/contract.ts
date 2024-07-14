@@ -1,59 +1,16 @@
 import { Address, Keypair, Operation, StrKey, hash, xdr } from '@stellar/stellar-sdk';
 import { randomBytes } from 'crypto';
-import { addressBook } from './address-book.js';
+import { AddressBook } from './address-book.js';
 import { config } from './env_config.js';
 import { TxParams, invokeSorobanOperation } from './tx.js';
 
 /**
- * Deploys a contract instance on the blockchain.
- * @param {string} contractKey - Key to store the deployed contract's ID in the addressbook.
- * @param {string} wasmKey - Key to fetch the WASM hash used for deployment.
+ * Bumps the code of a deployed contract by extending its ledger footprint TTL.
+ * @param {string} contractAddress - Address of the contract.
  * @param {TxParams} txParams - Transaction parameters.
- * @returns {Promise<string>} The contract ID of the deployed instance.
  */
-export async function deployContract(
-  contractKey: string,
-  wasmKey: string,
-  txParams: TxParams
-): Promise<string> {
-  const contractIdSalt = randomBytes(32);
-  const networkId = hash(Buffer.from(config.passphrase));
-  const contractIdPreimage = xdr.ContractIdPreimage.contractIdPreimageFromAddress(
-    new xdr.ContractIdPreimageFromAddress({
-      address: Address.fromString(txParams.account.accountId()).toScAddress(),
-      salt: contractIdSalt,
-    })
-  );
-
-  const hashIdPreimage = xdr.HashIdPreimage.envelopeTypeContractId(
-    new xdr.HashIdPreimageContractId({
-      networkId: networkId,
-      contractIdPreimage: contractIdPreimage,
-    })
-  );
-  const contractId = StrKey.encodeContract(hash(hashIdPreimage.toXDR()));
-  addressBook.setContractId(contractKey, contractId);
-  console.log('set the id', contractId);
-  const wasmHash = Buffer.from(addressBook.getWasmHash(wasmKey), 'hex');
-  console.log('set thewasmhash', wasmHash);
-
-  const deployFunction = xdr.HostFunction.hostFunctionTypeCreateContract(
-    new xdr.CreateContractArgs({
-      contractIdPreimage: contractIdPreimage,
-      executable: xdr.ContractExecutable.contractExecutableWasm(wasmHash),
-    })
-  );
-  const deployOp = Operation.invokeHostFunction({
-    func: deployFunction,
-    auth: [],
-  });
-  addressBook.writeToFile();
-  await invokeSorobanOperation(deployOp.toXDR('base64'), () => undefined, txParams);
-  return contractId;
-}
-
-export async function bumpContractInstance(contractKey: string, txParams: TxParams) {
-  const address = Address.fromString(addressBook.getContractId(contractKey));
+export async function bumpContractInstance(contractAddress: string, txParams: TxParams) {
+  const address = Address.fromString(contractAddress);
   const contractInstanceXDR = xdr.LedgerKey.contractData(
     new xdr.LedgerKeyContractData({
       contract: address.toScAddress(),
@@ -84,48 +41,18 @@ export async function bumpContractInstance(contractKey: string, txParams: TxPara
   );
 }
 
-export async function bumpContractCode(wasmKey: string, txParams: TxParams) {
-  const wasmHash = Buffer.from(addressBook.getWasmHash(wasmKey), 'hex');
-  const contractCodeXDR = xdr.LedgerKey.contractCode(
-    new xdr.LedgerKeyContractCode({
-      hash: wasmHash,
-    })
-  );
-  const bumpTransactionData = new xdr.SorobanTransactionData({
-    resources: new xdr.SorobanResources({
-      footprint: new xdr.LedgerFootprint({
-        readOnly: [contractCodeXDR],
-        readWrite: [],
-      }),
-      instructions: 0,
-      readBytes: 0,
-      writeBytes: 0,
-    }),
-    resourceFee: xdr.Int64.fromString('0'),
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    ext: new xdr.ExtensionPoint(0),
-  });
-  await invokeSorobanOperation(
-    Operation.extendFootprintTtl({ extendTo: 535670 }).toXDR('base64'),
-    () => undefined,
-    txParams,
-    bumpTransactionData
-  );
-}
-
 /**
  * Bumps the data of a deployed contract by extending its ledger footprint TTL.
- * @param {string} contractKey - Key identifying the contract.
+ * @param {string} contractAddress - Address of the contract.
  * @param {xdr.ScVal} dataKey - Specific data key within the contract to bump.
  * @param {TxParams} txParams - Transaction parameters.
  */
 export async function bumpContractData(
-  contractKey: string,
+  contractAddress: string,
   dataKey: xdr.ScVal,
   txParams: TxParams
 ) {
-  const address = Address.fromString(addressBook.getContractId(contractKey));
+  const address = Address.fromString(contractAddress);
   const contractDataXDR = xdr.LedgerKey.contractData(
     new xdr.LedgerKeyContractData({
       contract: address.toScAddress(),
@@ -158,16 +85,16 @@ export async function bumpContractData(
 
 /**
  * Restores the data of a deployed contract to its state prior to being extended.
- * @param {string} contractKey - Key identifying the contract.
+ * @param {string} contractAddress - Address of the contract.
  * @param {xdr.ScVal} dataKey - Specific data key within the contract to restore.
  * @param {TxParams} txParams - Transaction parameters.
  */
 export async function restoreContractData(
-  contractKey: string,
+  contractAddress: string,
   dataKey: xdr.ScVal,
   txParams: TxParams
 ) {
-  const address = Address.fromString(addressBook.getContractId(contractKey));
+  const address = Address.fromString(contractAddress);
   const contractDataXDR = xdr.LedgerKey.contractData(
     new xdr.LedgerKeyContractData({
       contract: address.toScAddress(),

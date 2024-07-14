@@ -11,32 +11,17 @@ class EnvConfig {
   rpc: SorobanRpc.Server;
   passphrase: string;
   friendbot: string;
-  pool_factory: string;
-  backstop: string;
-  treasury: string;
-  pegkeeper: string;
-  bridgeOracle: string;
   admin: Keypair;
 
   constructor(
     rpc: SorobanRpc.Server,
     passphrase: string,
     friendbot: string,
-    pool_factory: string,
-    backstop: string,
-    treasury: string,
-    pegkeeper: string,
-    bridgeOracle: string,
     admin: Keypair
   ) {
     this.rpc = rpc;
     this.passphrase = passphrase;
     this.friendbot = friendbot;
-    this.pool_factory = pool_factory;
-    this.backstop = backstop;
-    this.treasury = treasury;
-    this.pegkeeper = pegkeeper;
-    this.bridgeOracle = bridgeOracle;
     this.admin = admin;
   }
 
@@ -48,22 +33,12 @@ class EnvConfig {
     const rpc_url = process.env.RPC_URL;
     const friendbot_url = process.env.FRIENDBOT_URL;
     const passphrase = process.env.NETWORK_PASSPHRASE;
-    const pool_factory = process.env.POOL_FACTORY;
-    const backstop = process.env.BACKSTOP;
-    const treasury = process.env.TREASURY;
-    const pegkeeper = process.env.PEGKEEPER;
-    const bridgeOracle = process.env.BRIDGE_ORACLE;
     const admin = process.env.ADMIN;
 
     if (
       rpc_url == undefined ||
       friendbot_url == undefined ||
       passphrase == undefined ||
-      pool_factory == undefined ||
-      backstop == undefined ||
-      treasury == undefined ||
-      pegkeeper == undefined ||
-      bridgeOracle == undefined ||
       admin == undefined
     ) {
       throw new Error('Error: .env file is missing required fields');
@@ -73,11 +48,6 @@ class EnvConfig {
       new SorobanRpc.Server(rpc_url, { allowHttp: true }),
       passphrase,
       friendbot_url,
-      pool_factory,
-      backstop,
-      treasury,
-      pegkeeper,
-      bridgeOracle,
       Keypair.fromSecret(admin)
     );
   }
