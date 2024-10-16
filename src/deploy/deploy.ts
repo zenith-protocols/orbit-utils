@@ -22,20 +22,20 @@ import { Asset as BridgeAsset } from '../external/bridgeOracle.js';
 import { Address } from '@stellar/stellar-sdk';
 
 const reserve_configs: ReserveConfig[] = [
-  {
+  { // oUSD
     index: 0, // Does not matter
     decimals: 7,
     c_factor: 0,
     l_factor: 1_000_0000,
     util: 800_0000, // must be under 950_0000
-    max_util: 1_000_0000, // must be greater than util
-    r_base: 40_0000, // (0_0050000)
-    r_one: 0,
-    r_two: 0,
-    r_three: 0,
-    reactivity: 0, // must be 1000 or under
+    max_util: 950_0000, // must be greater than util
+    r_base: 10_0000, // (0_0050000)
+    r_one: 50_0000,
+    r_two: 50_0000,
+    r_three: 50_0000,
+    reactivity: 40, // must be 1000 or under
   },
-  {
+  { // XLM
     index: 0,
     decimals: 7,
     c_factor: 7_500_000,

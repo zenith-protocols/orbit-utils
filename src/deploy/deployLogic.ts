@@ -227,8 +227,8 @@ export async function deployPool(addressBook: AddressBook, name: string, backsto
     admin: config.admin.publicKey(),
     name: name,
     salt: poolSalt,
-    oracle: addressBook.getContract('bridge_oracle'),
-    backstop_take_rate: backstop_take_rate * 10000000,
+    oracle: addressBook.getContract('bridgeOracle'),
+    backstop_take_rate: backstop_take_rate,
     max_positions,
   };
 
