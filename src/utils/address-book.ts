@@ -8,11 +8,18 @@ const __dirname = path.dirname(__filename);
 export class AddressBook {
   private tokens: Map<string, string>;
   private contracts: Map<string, string>;
+  private pools: Map<string, string>;
   private fileName: string;
 
-  constructor(tokens: Map<string, string>, contracts: Map<string, string>, fileName: string) {
+  constructor(
+    tokens: Map<string, string>,
+    contracts: Map<string, string>,
+    pools: Map<string, string>,
+    fileName: string
+  ) {
     this.tokens = tokens;
     this.contracts = contracts;
+    this.pools = pools;
     this.fileName = fileName;
   }
 
@@ -30,11 +37,12 @@ export class AddressBook {
       return new AddressBook(
         new Map(Object.entries(contractObj.tokens)),
         new Map(Object.entries(contractObj.contracts)),
+        new Map(Object.entries(contractObj.pools || {})), // Default to empty object if pools not present
         fileName
       );
     } catch {
       // unable to load file, it likely doesn't exist
-      return new AddressBook(new Map(), new Map(), fileName);
+      return new AddressBook(new Map(), new Map(), new Map(), fileName);
     }
   }
 
@@ -111,6 +119,33 @@ export class AddressBook {
   }
 
   /**
+   * Get the pool for a given poolKey
+   * @param poolKey - The name of the pool
+   * @returns Pool
+   */
+  getPool(poolKey: string): string {
+    const pool = this.pools.get(poolKey);
+
+    if (pool != undefined) {
+      return pool;
+    } else {
+      console.error(`unable to find pool for ${poolKey} in ${this.fileName}`);
+      throw new Error(`Unable to find pool for ${poolKey}`);
+    }
+  }
+
+  /**
+   * Set the pool for a given poolKey
+   * @param poolKey - The name of the pool
+   * @param pool - Pool
+   */
+  setPool(poolKey: string, pool: string) {
+    this.pools.set(poolKey, pool);
+    console.warn(`set pool ${poolKey}, ${pool}`);
+    this.writeToFile();
+  }
+
+  /**
    * Get all token keys
    * @returns An array of all token keys
    */
@@ -124,5 +159,13 @@ export class AddressBook {
    */
   getContractKeys(): string[] {
     return Array.from(this.contracts.keys());
+  }
+
+  /**
+   * Get all pool keys
+   * @returns An array of all pool keys
+   */
+  getPoolKeys(): string[] {
+    return Array.from(this.pools.keys());
   }
 }

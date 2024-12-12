@@ -1,4 +1,4 @@
-import { Keypair, SorobanRpc } from '@stellar/stellar-sdk';
+import { Keypair, rpc } from '@stellar/stellar-sdk';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -8,13 +8,13 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 class EnvConfig {
-  rpc: SorobanRpc.Server;
+  rpc: rpc.Server;
   passphrase: string;
   friendbot: string;
   admin: Keypair;
 
   constructor(
-    rpc: SorobanRpc.Server,
+    rpc: rpc.Server,
     passphrase: string,
     friendbot: string,
     admin: Keypair
@@ -45,7 +45,7 @@ class EnvConfig {
     }
 
     return new EnvConfig(
-      new SorobanRpc.Server(rpc_url, { allowHttp: true }),
+      new rpc.Server(rpc_url, { allowHttp: true }),
       passphrase,
       friendbot_url,
       Keypair.fromSecret(admin)

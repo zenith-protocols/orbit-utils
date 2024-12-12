@@ -1,6 +1,4 @@
-import { Address, Keypair, Operation, StrKey, hash, xdr } from '@stellar/stellar-sdk';
-import { randomBytes } from 'crypto';
-import { AddressBook } from './address-book.js';
+import { Address, Keypair, Operation, xdr } from '@stellar/stellar-sdk';
 import { config } from './env_config.js';
 import { TxParams, invokeSorobanOperation } from './tx.js';
 

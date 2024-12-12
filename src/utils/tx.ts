@@ -2,7 +2,7 @@ import { parseError, parseResult } from '@blend-capital/blend-sdk';
 import {
   Account,
   Keypair,
-  SorobanRpc,
+  rpc,
   TimeoutInfinite,
   Transaction,
   TransactionBuilder,
@@ -46,7 +46,7 @@ export async function signWithKeypair(
 export async function simulationOperation(
   operation: string,
   txParams: TxParams
-): Promise<SorobanRpc.Api.SimulateTransactionResponse> {
+): Promise<rpc.Api.SimulateTransactionResponse> {
   const txBuilder = new TransactionBuilder(txParams.account, txParams.txBuilderOptions)
     .addOperation(xdr.Operation.fromXDR(operation, 'base64'))
     .setTimeout(TimeoutInfinite);
@@ -103,7 +103,7 @@ export async function invokeSorobanOperation<T>(
   }
   const transaction = txBuilder.build();
   const simulation = await config.rpc.simulateTransaction(transaction);
-  if (SorobanRpc.Api.isSimulationError(simulation)) {
+  if (rpc.Api.isSimulationError(simulation)) {
     console.log('is simulation error');
     console.log('xdr: ', transaction.toXDR());
     console.log('simulation: ', simulation);
@@ -112,7 +112,7 @@ export async function invokeSorobanOperation<T>(
     throw error;
   }
 
-  const assembledTx = SorobanRpc.assembleTransaction(transaction, simulation).build();
+  const assembledTx = rpc.assembleTransaction(transaction, simulation).build();
   console.log('Transaction Hash:', assembledTx.hash().toString('hex'));
   const signedTx = new Transaction(
     await txParams.signerFunction(assembledTx.toXDR()),
