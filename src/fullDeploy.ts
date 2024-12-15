@@ -124,12 +124,13 @@ async function main() {
     await setReserve(poolId, stableId, txParamsAdmin);
     await setEmissionsConfig(poolId, POOL_EMISSION_METADATA, txParamsAdmin);
 
-    confirmAction("Make sure the pool is setup correctly before continuing with backstop deposit", poolId);
+    if (await confirmAction("Make sure the pool is setup correctly before continuing with backstop deposit", poolId)) {
 
-    await backstopDeposit(addressBook.getContract("backstop"), poolId, 50000, txParamsAdmin);
-    await setStatus(poolId, 0, txParamsAdmin);
+        await backstopDeposit(addressBook.getContract("backstop"), poolId, 50000, txParamsAdmin);
+        await setStatus(poolId, 0, txParamsAdmin);
 
-    await newStablecoinAdmin(admin, stableId, base, poolId, 1000000, txParamsAdmin);
+        await newStablecoinAdmin(admin, stableId, base, poolId, 1000000, txParamsAdmin);
+    }
 }
 
 main().catch(console.error);
