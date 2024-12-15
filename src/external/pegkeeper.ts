@@ -15,7 +15,7 @@ export class PegkeeperContract extends Contract {
   ]);
 
   static readonly parsers = {
-    initialize: () => {},
+    initialize: () => { },
   };
 
   initialize(contractArgs: pegkeeperInitArgs): string {

@@ -22,17 +22,9 @@ export interface BridgeOracleInitArgs {
   oracle: Address | string;
 }
 
-export interface BridgeOracleSetOracleArgs {
-  oracle: Address | string;
-}
-
 export interface BridgeOracleAddAssetArgs {
   asset: Asset;
   to: Asset;
-}
-
-export interface LastPriceArgs {
-  asset: Asset;
 }
 
 export class BridgeOracleContract extends Contract {
@@ -42,20 +34,22 @@ export class BridgeOracleContract extends Contract {
     "AAAAAAAAAAAAAAAKc2V0X29yYWNsZQAAAAAAAQAAAAAAAAAGb3JhY2xlAAAAAAATAAAAAA==",
     "AAAAAAAAAAAAAAAIZGVjaW1hbHMAAAAAAAAAAQAAAAQ=",
     "AAAAAAAAAAAAAAAJbGFzdHByaWNlAAAAAAAAAQAAAAAAAAAFYXNzZXQAAAAAAAfQAAAABUFzc2V0AAAAAAAAAQAAA+gAAAfQAAAACVByaWNlRGF0YQAAAA==",
+    "AAAAAAAAAAAAAAAHdXBncmFkZQAAAAABAAAAAAAAAA1uZXdfd2FzbV9oYXNoAAAAAAAD7gAAACAAAAAA",
     "AAAAAgAAAAAAAAAAAAAAE0JyaWRnZU9yYWNsZURhdGFLZXkAAAAAAwAAAAAAAAAAAAAABUFETUlOAAAAAAAAAAAAAAAAAAAGT1JBQ0xFAAAAAAABAAAAAAAAAAZCUklER0UAAAAAAAEAAAfQAAAABUFzc2V0AAAA",
-    "AAAABAAAAAAAAAAAAAAAEUJyaWRnZU9yYWNsZUVycm9yAAAAAAAAAQAAAAAAAAAXQWxyZWFkeUluaXRpYWxpemVkRXJyb3IAAAAB9Q==",
+    "AAAABAAAAAAAAAAAAAAAEUJyaWRnZU9yYWNsZUVycm9yAAAAAAAAAQAAAAAAAAAXQWxyZWFkeUluaXRpYWxpemVkRXJyb3IAAAAF3Q==",
     "AAAAAQAAAC9QcmljZSBkYXRhIGZvciBhbiBhc3NldCBhdCBhIHNwZWNpZmljIHRpbWVzdGFtcAAAAAAAAAAACVByaWNlRGF0YQAAAAAAAAIAAAAAAAAABXByaWNlAAAAAAAACwAAAAAAAAAJdGltZXN0YW1wAAAAAAAABg==",
     "AAAAAgAAAApBc3NldCB0eXBlAAAAAAAAAAAABUFzc2V0AAAAAAAAAgAAAAEAAAAAAAAAB1N0ZWxsYXIAAAAAAQAAABMAAAABAAAAAAAAAAVPdGhlcgAAAAAAAAEAAAAR"
   ]);
 
   static readonly parsers = {
-    initialize: () => {},
-    addAsset: () => {},
-    setOracle: () => {},
+    initialize: () => { },
+    addAsset: () => { },
+    setOracle: () => { },
     decimals: (result: string): u32 =>
       BridgeOracleContract.spec.funcResToNative('decimals', result),
     lastPrice: (result: string): Option<PriceData> =>
       BridgeOracleContract.spec.funcResToNative('lastprice', result),
+    upgrade: () => { },
   };
 
   initialize(contractArgs: BridgeOracleInitArgs): string {
@@ -72,10 +66,10 @@ export class BridgeOracleContract extends Contract {
     ).toXDR('base64');
   }
 
-  setOracle(contractArgs: BridgeOracleSetOracleArgs): string {
+  setOracle(oracle: Address | string): string {
     return this.call(
       'set_oracle',
-      ...BridgeOracleContract.spec.funcArgsToScVals('set_oracle', contractArgs)
+      ...BridgeOracleContract.spec.funcArgsToScVals('set_oracle', { oracle })
     ).toXDR('base64');
   }
 
@@ -83,10 +77,17 @@ export class BridgeOracleContract extends Contract {
     return this.call('decimals').toXDR('base64');
   }
 
-  lastPrice(contractArgs: LastPriceArgs): string {
+  lastPrice(asset: Asset): string {
     return this.call(
       'lastprice',
-      ...BridgeOracleContract.spec.funcArgsToScVals('lastprice', contractArgs)
+      ...BridgeOracleContract.spec.funcArgsToScVals('lastprice', { asset })
+    ).toXDR('base64');
+  }
+
+  upgrade(new_wasm_hash: Buffer): string {
+    return this.call(
+      'upgrade',
+      ...BridgeOracleContract.spec.funcArgsToScVals('upgrade', { new_wasm_hash })
     ).toXDR('base64');
   }
 }

@@ -39,7 +39,6 @@ export async function signWithKeypair(
     // Verify the signature with the source account's public key.
     return sourceKeypair.verify(txHash, signature.signature());
   });
-  console.log(`Was it signed in the signer function? ${signed}`);
   return tx.toXDR();
 }
 

@@ -11,6 +11,7 @@ import { PoolFactoryContract } from "@blend-capital/blend-sdk";
 import { randomBytes } from "crypto";
 import { bumpContractInstance } from "../utils/contract.js";
 import { Asset, OracleContract } from "../external/oracle.js";
+import { SCALAR_7 } from "../utils/utils.js";
 
 export async function initOrbit(addressBook: AddressBook, txParams: TxParams) {
   console.log('Initializing Orbit...');
@@ -93,7 +94,7 @@ export async function deployPool(addressBook: AddressBook, name: string, backsto
     name: name,
     salt: poolSalt,
     oracle: addressBook.getContract('bridgeOracle'),
-    backstop_take_rate: backstop_take_rate,
+    backstop_take_rate: Math.floor(backstop_take_rate * SCALAR_7),
     max_positions,
   };
 

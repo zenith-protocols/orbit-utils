@@ -1,6 +1,5 @@
-import { i128, ReserveEmissionMetadata, ReserveConfig, u32 } from '@blend-capital/blend-sdk';
 import { Address, Contract } from '@stellar/stellar-sdk';
-import { Spec as ContractSpec } from '@stellar/stellar-sdk/contract';
+import { Spec as ContractSpec, i128 } from '@stellar/stellar-sdk/contract';
 
 export type Asset =
     | { tag: 'Stellar'; values: readonly [Address] }
@@ -19,42 +18,37 @@ export interface AdminNewStablecoinArgs {
     initial_supply: i128,
 }
 
-export interface AdminSetPegkeeperArgs {
-    pegkeeper: Address | string,
-}
-
-export interface AdminSetAdminArgs {
-    admin: Address | string,
-}
-
-export interface AdminSetOracleArgs {
-    oracle: Address | string,
-}
-
 export interface AdminUpdateSupplyArgs {
     token: Address | string,
     amount: i128,
 }
 
 export class AdminContract extends Contract {
-    static spec: ContractSpec = new ContractSpec(["AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAAAwAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAh0cmVhc3VyeQAAABMAAAAAAAAADWJyaWRnZV9vcmFjbGUAAAAAAAATAAAAAA==",
+    static spec: ContractSpec = new ContractSpec([
+        "AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAAAwAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAh0cmVhc3VyeQAAABMAAAAAAAAADWJyaWRnZV9vcmFjbGUAAAAAAAATAAAAAA==",
         "AAAAAAAAAAAAAAAObmV3X3N0YWJsZWNvaW4AAAAAAAQAAAAAAAAABXRva2VuAAAAAAAAEwAAAAAAAAAFYXNzZXQAAAAAAAfQAAAABUFzc2V0AAAAAAAAAAAAAApibGVuZF9wb29sAAAAAAATAAAAAAAAAA5pbml0aWFsX3N1cHBseQAAAAAACwAAAAA=",
         "AAAAAAAAAAAAAAANdXBkYXRlX3N1cHBseQAAAAAAAAIAAAAAAAAABXRva2VuAAAAAAAAEwAAAAAAAAAGYW1vdW50AAAAAAALAAAAAA==",
         "AAAAAAAAAAAAAAANc2V0X3BlZ2tlZXBlcgAAAAAAAAEAAAAAAAAACXBlZ2tlZXBlcgAAAAAAABMAAAAA",
         "AAAAAAAAAAAAAAAKc2V0X29yYWNsZQAAAAAAAQAAAAAAAAAGb3JhY2xlAAAAAAATAAAAAA==",
         "AAAAAAAAAAAAAAAJc2V0X2FkbWluAAAAAAAAAQAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAA==",
         "AAAAAAAAAAAAAAAHdXBncmFkZQAAAAABAAAAAAAAAA1uZXdfd2FzbV9oYXNoAAAAAAAD7gAAACAAAAAA",
+        "AAAAAAAAAAAAAAAQdXBncmFkZV90cmVhc3VyeQAAAAEAAAAAAAAADW5ld193YXNtX2hhc2gAAAAAAAPuAAAAIAAAAAA=",
+        "AAAAAAAAAAAAAAAVdXBncmFkZV9icmlkZ2Vfb3JhY2xlAAAAAAAAAQAAAAAAAAANbmV3X3dhc21faGFzaAAAAAAAA+4AAAAgAAAAAA==",
         "AAAAAgAAAAAAAAAAAAAADEFkbWluRGF0YUtleQAAAAMAAAAAAAAAAAAAAAVBRE1JTgAAAAAAAAAAAAAAAAAADEJSSURHRU9SQUNMRQAAAAAAAAAAAAAACFRSRUFTVVJZ",
-        "AAAABAAAAAAAAAAAAAAACkFkbWluRXJyb3IAAAAAAAEAAAAAAAAAF0FscmVhZHlJbml0aWFsaXplZEVycm9yAAAAAfU=",
-        "AAAAAgAAAApBc3NldCB0eXBlAAAAAAAAAAAABUFzc2V0AAAAAAAAAgAAAAEAAAAAAAAAB1N0ZWxsYXIAAAAAAQAAABMAAAABAAAAAAAAAAVPdGhlcgAAAAAAAAEAAAAR"]);
+        "AAAABAAAAAAAAAAAAAAACkFkbWluRXJyb3IAAAAAAAEAAAAAAAAAF0FscmVhZHlJbml0aWFsaXplZEVycm9yAAAABd0=",
+        "AAAAAgAAAApBc3NldCB0eXBlAAAAAAAAAAAABUFzc2V0AAAAAAAAAgAAAAEAAAAAAAAAB1N0ZWxsYXIAAAAAAQAAABMAAAABAAAAAAAAAAVPdGhlcgAAAAAAAAEAAAAR"
+    ]);
 
     static readonly parsers = {
         initialize: () => { },
         newStablecoin: () => { },
-        setPegkeeper: () => { },
-        setAdmin: () => { },
-        setOracle: () => { },
         updateSupply: () => { },
+        setPegkeeper: () => { },
+        setOracle: () => { },
+        setAdmin: () => { },
+        upgrade: () => { },
+        upgradeTreasury: () => { },
+        upgradeBridgeOracle: () => { },
     };
 
     initialize(contractArgs: AdminInitArgs): string {
@@ -71,31 +65,52 @@ export class AdminContract extends Contract {
         ).toXDR('base64');
     }
 
-    setPegkeeper(contractArgs: AdminSetPegkeeperArgs): string {
-        return this.call(
-            'set_pegkeeper',
-            ...AdminContract.spec.funcArgsToScVals('set_pegkeeper', contractArgs)
-        ).toXDR('base64');
-    }
-
-    setAdmin(contractArgs: AdminSetAdminArgs): string {
-        return this.call(
-            'set_admin',
-            ...AdminContract.spec.funcArgsToScVals('set_admin', contractArgs)
-        ).toXDR('base64');
-    }
-
-    setOracle(contractArgs: AdminSetOracleArgs): string {
-        return this.call(
-            'set_oracle',
-            ...AdminContract.spec.funcArgsToScVals('set_oracle', contractArgs)
-        ).toXDR('base64');
-    }
-
     updateSupply(contractArgs: AdminUpdateSupplyArgs): string {
         return this.call(
             'update_supply',
             ...AdminContract.spec.funcArgsToScVals('update_supply', contractArgs)
+        ).toXDR('base64');
+    }
+
+    setPegkeeper(pegkeeper: Address | string): string {
+        return this.call(
+            'set_pegkeeper',
+            ...AdminContract.spec.funcArgsToScVals('set_pegkeeper', { pegkeeper })
+        ).toXDR('base64');
+    }
+
+    setOracle(oracle: Address | string): string {
+        return this.call(
+            'set_oracle',
+            ...AdminContract.spec.funcArgsToScVals('set_oracle', { oracle })
+        ).toXDR('base64');
+    }
+
+    setAdmin(admin: Address | string): string {
+        return this.call(
+            'set_admin',
+            ...AdminContract.spec.funcArgsToScVals('set_admin', { admin })
+        ).toXDR('base64');
+    }
+
+    upgrade(new_wasm_hash: Buffer): string {
+        return this.call(
+            'upgrade',
+            ...AdminContract.spec.funcArgsToScVals('upgrade', { new_wasm_hash })
+        ).toXDR('base64');
+    }
+
+    upgradeTreasury(new_wasm_hash: Buffer): string {
+        return this.call(
+            'upgrade_treasury',
+            ...AdminContract.spec.funcArgsToScVals('upgrade_treasury', { new_wasm_hash })
+        ).toXDR('base64');
+    }
+
+    upgradeBridgeOracle(new_wasm_hash: Buffer): string {
+        return this.call(
+            'upgrade_bridge_oracle',
+            ...AdminContract.spec.funcArgsToScVals('upgrade_bridge_oracle', { new_wasm_hash })
         ).toXDR('base64');
     }
 }

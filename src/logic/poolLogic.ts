@@ -5,10 +5,11 @@ import { invokeSorobanOperation, TxParams } from "../utils/tx.js";
 import { ReserveConfig, ReserveEmissionMetadata } from "@blend-capital/blend-sdk";
 import { Request } from "@blend-capital/blend-sdk";
 import { config } from "../utils/env_config.js";
+import { SCALAR_7 } from "../utils/utils.js";
 
-export async function setPoolAdmin(addressBook: AddressBook, poolName: string, newAdmin: string, txParams: TxParams) {
+export async function setPoolAdmin(contract: string, newAdmin: string, txParams: TxParams) {
   console.log('Setting pool admin...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     await invokeSorobanOperation(
       pool.setAdmin(newAdmin),
@@ -22,33 +23,47 @@ export async function setPoolAdmin(addressBook: AddressBook, poolName: string, n
   }
 }
 
-export async function updatePool(addressBook: AddressBook, poolName: string, backstopTakeRate: number, maxPositions: number, txParams: TxParams) {
+export async function updatePool(contract: string, backstopTakeRate: number, maxPositions: number, txParams: TxParams) {
   console.log('Updating pool...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     await invokeSorobanOperation(
       pool.updatePool({
-        backstop_take_rate: backstopTakeRate,
+        backstop_take_rate: backstopTakeRate * SCALAR_7,
         max_positions: maxPositions
       }),
       PoolContract.parsers.updatePool,
       txParams
     );
-    console.log(`Successfully updated pool ${poolName}.\n`);
+    console.log(`Successfully updated pool ${contract}.\n`);
   } catch (e) {
     console.log('Failed to update pool', e);
     throw e;
   }
 }
 
-export async function queueSetReserve(addressBook: AddressBook, poolName: string, asset: string, metadata: ReserveConfig, txParams: TxParams) {
+export async function queueSetReserve(contract: string, asset: string, metadata: ReserveConfig, txParams: TxParams) {
   console.log('Queueing set reserve...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const scaledReserveConfig = {
+    index: metadata.index,
+    decimals: metadata.decimals,
+    c_factor: metadata.c_factor * SCALAR_7,
+    l_factor: metadata.l_factor * SCALAR_7,
+    util: metadata.util * SCALAR_7,
+    max_util: metadata.max_util * SCALAR_7,
+    r_base: metadata.r_base * SCALAR_7,
+    r_one: metadata.r_one * SCALAR_7,
+    r_two: metadata.r_two * SCALAR_7,
+    r_three: metadata.r_three * SCALAR_7,
+    reactivity: metadata.reactivity * SCALAR_7,
+  }
+  console.log(scaledReserveConfig);
+  const pool = new PoolContract(contract);
   try {
     await invokeSorobanOperation(
       pool.queueSetReserve({
         asset,
-        metadata
+        metadata: scaledReserveConfig
       }),
       PoolContract.parsers.queueSetReserve,
       txParams
@@ -60,9 +75,9 @@ export async function queueSetReserve(addressBook: AddressBook, poolName: string
   }
 }
 
-export async function cancelSetReserve(addressBook: AddressBook, poolName: string, asset: string, txParams: TxParams) {
+export async function cancelSetReserve(contract: string, asset: string, txParams: TxParams) {
   console.log('Canceling set reserve...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     await invokeSorobanOperation(
       pool.cancelSetReserve(asset),
@@ -76,9 +91,9 @@ export async function cancelSetReserve(addressBook: AddressBook, poolName: strin
   }
 }
 
-export async function setReserve(addressBook: AddressBook, poolName: string, asset: string, txParams: TxParams) {
+export async function setReserve(contract: string, asset: string, txParams: TxParams) {
   console.log('Setting reserve...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     const result = await invokeSorobanOperation(
       pool.setReserve(asset),
@@ -93,9 +108,9 @@ export async function setReserve(addressBook: AddressBook, poolName: string, ass
   }
 }
 
-export async function badDebt(addressBook: AddressBook, poolName: string, user: string, txParams: TxParams) {
+export async function badDebt(contract: string, user: string, txParams: TxParams) {
   console.log('Processing bad debt...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     await invokeSorobanOperation(
       pool.badDebt(user),
@@ -109,9 +124,9 @@ export async function badDebt(addressBook: AddressBook, poolName: string, user: 
   }
 }
 
-export async function updateStatus(addressBook: AddressBook, poolName: string, txParams: TxParams) {
+export async function updateStatus(contract: string, txParams: TxParams) {
   console.log('Updating status...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     const status = await invokeSorobanOperation(
       pool.updateStatus(),
@@ -126,9 +141,9 @@ export async function updateStatus(addressBook: AddressBook, poolName: string, t
   }
 }
 
-export async function setStatus(addressBook: AddressBook, poolName: string, status: number, txParams: TxParams) {
+export async function setStatus(contract: string, status: number, txParams: TxParams) {
   console.log('Setting status...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     await invokeSorobanOperation(
       pool.setStatus(status),
@@ -142,9 +157,9 @@ export async function setStatus(addressBook: AddressBook, poolName: string, stat
   }
 }
 
-export async function gulpEmissions(addressBook: AddressBook, poolName: string, txParams: TxParams) {
+export async function gulpEmissions(contract: string, txParams: TxParams) {
   console.log('Gulping emissions...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     const amount = await invokeSorobanOperation(
       pool.gulpEmissions(),
@@ -159,9 +174,9 @@ export async function gulpEmissions(addressBook: AddressBook, poolName: string, 
   }
 }
 
-export async function setEmissionsConfig(addressBook: AddressBook, poolName: string, metadata: Array<ReserveEmissionMetadata>, txParams: TxParams) {
+export async function setEmissionsConfig(contract: string, metadata: Array<ReserveEmissionMetadata>, txParams: TxParams) {
   console.log('Setting emissions config...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     await invokeSorobanOperation(
       pool.setEmissionsConfig(metadata),
@@ -175,9 +190,9 @@ export async function setEmissionsConfig(addressBook: AddressBook, poolName: str
   }
 }
 
-export async function claim(addressBook: AddressBook, poolName: string, from: string, reserveTokenIds: Array<number>, to: string, txParams: TxParams) {
+export async function claim(contract: string, from: string, reserveTokenIds: Array<number>, to: string, txParams: TxParams) {
   console.log('Claiming...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     const amount = await invokeSorobanOperation(
       pool.claim({ from, reserve_token_ids: reserveTokenIds, to }),
@@ -192,9 +207,9 @@ export async function claim(addressBook: AddressBook, poolName: string, from: st
   }
 }
 
-export async function newLiquidationAuction(addressBook: AddressBook, poolName: string, user: string, percentLiquidated: number, txParams: TxParams) {
+export async function newLiquidationAuction(contract: string, user: string, percentLiquidated: number, txParams: TxParams) {
   console.log('Creating new liquidation auction...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     const auctionData = await invokeSorobanOperation(
       pool.newLiquidationAuction({ user, percent_liquidated: BigInt(percentLiquidated) }),
@@ -209,9 +224,9 @@ export async function newLiquidationAuction(addressBook: AddressBook, poolName: 
   }
 }
 
-export async function newBadDebtAuction(addressBook: AddressBook, poolName: string, txParams: TxParams) {
+export async function newBadDebtAuction(contract: string, txParams: TxParams) {
   console.log('Creating new bad debt auction...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     const auctionData = await invokeSorobanOperation(
       pool.newBadDebtAuction(),
@@ -226,9 +241,9 @@ export async function newBadDebtAuction(addressBook: AddressBook, poolName: stri
   }
 }
 
-export async function newInterestAuction(addressBook: AddressBook, poolName: string, assets: Array<string>, txParams: TxParams) {
+export async function newInterestAuction(contract: string, assets: Array<string>, txParams: TxParams) {
   console.log('Creating new interest auction...');
-  const pool = new PoolContract(addressBook.getPool(poolName));
+  const pool = new PoolContract(contract);
   try {
     const auctionData = await invokeSorobanOperation(
       pool.newInterestAuction(assets),
@@ -243,16 +258,16 @@ export async function newInterestAuction(addressBook: AddressBook, poolName: str
   }
 }
 
-export async function addPoolToRewardZone(addressBook: AddressBook, poolName: string, poolToRemove: string, txParams: TxParams) {
+export async function addPoolToRewardZone(contract: string, poolToAdd: string, poolToRemove: string, txParams: TxParams) {
   console.log('Adding to reward zone...');
   if (poolToRemove === '') {
-    poolToRemove = addressBook.getContract(poolName);
+    poolToRemove = poolToAdd;
   }
-  const backstop = new BackstopContract(addressBook.getContract('backstop'));
+  const backstop = new BackstopContract(contract);
   try {
     await invokeSorobanOperation(
       backstop.addReward({
-        to_add: addressBook.getPool(poolName),
+        to_add: poolToAdd,
         to_remove: poolToRemove,
       }),
       BackstopContract.parsers.addReward,
@@ -264,15 +279,15 @@ export async function addPoolToRewardZone(addressBook: AddressBook, poolName: st
   }
 }
 
-export async function backstopDeposit(addressBook: AddressBook, pool: string, amount: number, txParams: TxParams) {
+export async function backstopDeposit(contract: string, pool: string, amount: number, txParams: TxParams) {
   console.log('Depositing to backstop...');
-  const backstop = new BackstopContract(addressBook.getContract('backstop'));
+  const backstop = new BackstopContract(contract);
   try {
     await invokeSorobanOperation(
       backstop.deposit({
         from: config.admin.publicKey(),
-        pool_address: addressBook.getPool(pool),
-        amount: BigInt(amount),
+        pool_address: pool,
+        amount: BigInt(amount * SCALAR_7),
       }),
       BackstopContract.parsers.deposit,
       txParams
@@ -280,5 +295,25 @@ export async function backstopDeposit(addressBook: AddressBook, pool: string, am
     console.log(`Successfully deposited ${amount} to backstop.\n`);
   } catch (e) {
     console.log('Failed to deposit to backstop', e);
+  }
+}
+
+export async function submitToPool(contract: string, from: string, spender: string, to: string, requests: Array<Request>, txParams: TxParams) {
+  console.log('Submitting to pool...');
+  const poolContract = new PoolContract(contract);
+  try {
+    await invokeSorobanOperation(
+      poolContract.submit({
+        from,
+        spender,
+        to,
+        requests,
+      }),
+      PoolContract.parsers.submit,
+      txParams
+    );
+    console.log(`Successfully submitted to pool.\n`);
+  } catch (e) {
+    console.log('Failed to submit to pool', e);
   }
 }

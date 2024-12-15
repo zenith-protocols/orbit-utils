@@ -1,12 +1,14 @@
 # Deployment Script for Blockchain Contracts
 
-This repository contains a deployment script for the orbit protocol, providing functionalities for initializing, deploying, and managing various contract operations. The main entry point for the functionality is the deploy script, which guides the user through various actions using a command-line interface (CLI).
+This repository contains deployment scripts for the orbit protocol, providing functionalities for initializing, deploying, and managing various contract operations. The repository includes both interactive CLI tools and automated deployment scripts.
 
 ## Table of Contents
 - [Configuration](#configuration)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Available Actions](#available-actions)
+- [Full Deployment Script](#full-deployment-script)
+- [Liquidation Test Script](#liquidation-test-script)
+- [Available CLI Actions](#available-cli-actions)
   - [Main Options](#main-options)
   - [Pool Options](#pool-options)
   - [Treasury Options](#treasury-options)
@@ -24,10 +26,17 @@ The script uses a configuration file to manage network-specific settings and cre
     "treasury": "address",
     "pegkeeper": "address",
     "bridgeOracle": "address",
-    "router": "address"
+    "router": "address",
+    "oracle": "address"
   },
-  "tokens": {}
+  "tokens": {},
+  "pools": {}
 }
+```
+
+## Installation
+```sh
+npm install
 ```
 
 ## Usage
@@ -35,12 +44,50 @@ The script uses a configuration file to manage network-specific settings and cre
 ```sh
 npm run build
 ```
-### Run
+### Run Interactive CLI
 ```sh
-node lib/deploy/deploy.js
+node lib/start.ts
 ```
 
-## Available Actions
+## Full Deployment Script
+
+The `fullDeploy.ts` script provides an automated way to deploy all necessary contracts and set up the initial configuration. It performs the following steps:
+
+1. Initializes Orbit system contracts
+2. Deploys XLM and OUSD tokens
+3. Creates liquidity pool pair
+4. Initializes Oracle with price feeds
+5. Sets up pool configurations
+6. Configures backstop and emissions
+7. Initializes stablecoin admin
+
+To run the full deployment:
+```sh
+node lib/fullDeploy.ts
+```
+
+## Liquidation Test Script
+
+The `liquidation.ts` script allows testing of the liquidation mechanism by:
+
+1. Setting up test accounts
+2. Minting collateral
+3. Creating a position
+4. Triggering a liquidation by changing oracle prices
+5. Testing the keep-peg mechanism
+
+Note: The script requires the AMM pair address. You can find this on the Stellar testnet explorer by:
+1. Going to the testnet explorer at https://stellar.expert/explorer/testnet
+2. Searching one of the tokens created and find the add_liquidity call.
+3. You should see that it initializes a new contract that is the amm contract needed
+
+To run the liquidation test:
+```sh
+# Edit the AMM pair address in liquidation.ts first
+node lib/liquidation.ts
+```
+
+## Available CLI Actions
 
 ### Main Options
 
@@ -51,11 +98,8 @@ node lib/deploy/deploy.js
 3. **Deploy Pool**: Deploys a new pool with the specified parameters.
    - Parameters: `pool_name`, `backstop_take_rate`, `max_positions`
 4. **Pool Options**: Manage pool-specific operations such as setting reserves, emissions, and statuses.
-   - Sub-options: `Set reserve`, `Set emissions`, `Add to backstop`, `Set status`, `Add to Reward Zone`, `Set Admin`
-5. **Treasury Options**: Manage treasury-specific operations like adding stablecoins, increasing supply, setting pegkeeper, and setting admin.
-   - Sub-options: `Add Stablecoin`, `Increase Supply`, `Set Pegkeeper`, `Set Treasury Admin`
-6. **Bridge Oracle Options**: Manage bridge oracle-specific operations like adding assets, getting the last price, and setting the oracle.
-   - Sub-options: `Add Bridge Oracle Asset`, `Get Last Price`, `Set Oracle`
+5. **Treasury Options**: Manage treasury-specific operations like adding stablecoins and managing supply.
+6. **Bridge Oracle Options**: Manage bridge oracle-specific operations like adding assets and price feeds.
 
 ### Pool Options
 

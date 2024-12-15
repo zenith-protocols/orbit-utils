@@ -3,31 +3,30 @@ import { AddressBook } from '../utils/address-book.js';
 import * as poolLogic from '../logic/poolLogic.js';
 import { TxParams } from '../utils/tx.js';
 import { ReserveConfig, ReserveEmissionMetadata } from '@blend-capital/blend-sdk';
-
-const SCALAR_7 = 10000000; // 10^7 for number scaling
+import { confirmAction, selectToken } from '../utils/utils.js';
 
 const RESERVE_CONFIGS: Record<string, ReserveConfig> = {
   'Stable (Lending Factor: 100%)': {
     index: 1,
     decimals: 7,
     c_factor: 0,
-    l_factor: 1_000_0000,
-    util: 800_0000,
-    max_util: 950_0000,
-    r_base: 10_0000,
-    r_one: 50_0000,
-    r_two: 50_0000,
-    r_three: 50_0000,
-    reactivity: 40,
+    l_factor: 1,
+    util: 0.8,
+    max_util: 0.95,
+    r_base: 0.01,
+    r_one: 0.05,
+    r_two: 0.05,
+    r_three: 0.05,
+    reactivity: 0.0000004,
   },
   'Collateral (Collateral Factor: 75%)': {
     index: 0,
     decimals: 7,
-    c_factor: 7_500_000,
+    c_factor: 0.75,
     l_factor: 0,
     util: 0,
-    max_util: 1_000_0000,
-    r_base: 40_0000,
+    max_util: 1,
+    r_base: 0,
     r_one: 0,
     r_two: 0,
     r_three: 0,
@@ -48,18 +47,6 @@ const POOL_EMISSION_METADATA: ReserveEmissionMetadata[] = [
   }
 ];
 
-async function confirmAction(message: string, details: string): Promise<boolean> {
-  const { confirm } = await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'confirm',
-      message: `${message}\n${details}\nProceed?`,
-      default: false,
-    },
-  ]);
-  return confirm;
-}
-
 async function selectPool(addressBook: AddressBook, message: string = 'Select pool:'): Promise<string> {
   const poolKeys = addressBook.getPoolKeys();
   if (poolKeys.length === 0) {
@@ -75,7 +62,7 @@ async function selectPool(addressBook: AddressBook, message: string = 'Select po
     }
   ]);
 
-  return selectedPool;
+  return addressBook.getPool(selectedPool);
 }
 
 async function handlePool(addressBook: AddressBook, txParams: TxParams) {
@@ -123,7 +110,7 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
           }]);
 
           if (await confirmAction('Set Pool Admin?', `Pool: ${selectedPool}\nNew Admin: ${newAdmin}`)) {
-            await poolLogic.setPoolAdmin(addressBook, selectedPool, newAdmin, txParams);
+            await poolLogic.setPoolAdmin(selectedPool, newAdmin, txParams);
           }
           break;
         }
@@ -152,66 +139,43 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
 
           if (await confirmAction('Update Pool?',
             `Pool: ${selectedPool}\nBackstop Take Rate: ${backstopTakeRate}\nMax Positions: ${maxPositions}`)) {
-            await poolLogic.updatePool(
-              addressBook,
-              selectedPool,
-              Math.floor(backstopTakeRate * SCALAR_7),
-              maxPositions,
-              txParams
-            );
+            await poolLogic.updatePool(selectedPool, backstopTakeRate, maxPositions, txParams);
           }
           break;
         }
 
         case 'Queue Set Reserve': {
-          const { config_type, asset } = await inquirer.prompt([
-            {
-              type: 'list',
-              name: 'config_type',
-              message: 'Select reserve configuration:',
-              choices: Object.keys(RESERVE_CONFIGS)
-            },
-            {
-              type: 'input',
-              name: 'asset',
-              message: 'Enter asset address:',
-              validate: (input) => input.trim() !== '' || 'Asset address cannot be empty'
-            }
-          ]);
+          const { config_type } = await inquirer.prompt([{
+            type: 'list',
+            name: 'config_type',
+            message: 'Select reserve configuration:',
+            choices: Object.keys(RESERVE_CONFIGS)
+          }]);
 
+          const asset = await selectToken(addressBook, 'Select asset for reserve:');
           const selectedConfig = RESERVE_CONFIGS[config_type];
 
           if (await confirmAction('Queue Set Reserve?',
             `Pool: ${selectedPool}\nAsset: ${asset}\nConfig Type: ${config_type}\n\nConfig Details:\n${JSON.stringify(selectedConfig, null, 2)}`)) {
-            await poolLogic.queueSetReserve(addressBook, selectedPool, asset, selectedConfig, txParams);
+            await poolLogic.queueSetReserve(selectedPool, asset, selectedConfig, txParams);
           }
           break;
         }
 
         case 'Cancel Set Reserve': {
-          const { asset } = await inquirer.prompt([{
-            type: 'input',
-            name: 'asset',
-            message: 'Enter asset address to cancel:',
-            validate: (input) => input.trim() !== '' || 'Asset address cannot be empty'
-          }]);
+          const asset = await selectToken(addressBook, 'Select asset to cancel:');
 
           if (await confirmAction('Cancel Set Reserve?', `Pool: ${selectedPool}\nAsset: ${asset}`)) {
-            await poolLogic.cancelSetReserve(addressBook, selectedPool, asset, txParams);
+            await poolLogic.cancelSetReserve(selectedPool, asset, txParams);
           }
           break;
         }
 
         case 'Set Reserve': {
-          const { asset } = await inquirer.prompt([{
-            type: 'input',
-            name: 'asset',
-            message: 'Enter asset address:',
-            validate: (input) => input.trim() !== '' || 'Asset address cannot be empty'
-          }]);
+          const asset = await selectToken(addressBook, 'Select asset to set:');
 
           if (await confirmAction('Set Reserve?', `Pool: ${selectedPool}\nAsset: ${asset}`)) {
-            await poolLogic.setReserve(addressBook, selectedPool, asset, txParams);
+            await poolLogic.setReserve(selectedPool, asset, txParams);
           }
           break;
         }
@@ -225,14 +189,14 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
           }]);
 
           if (await confirmAction('Process Bad Debt?', `Pool: ${selectedPool}\nUser: ${user}`)) {
-            await poolLogic.badDebt(addressBook, selectedPool, user, txParams);
+            await poolLogic.badDebt(selectedPool, user, txParams);
           }
           break;
         }
 
         case 'Update Status': {
           if (await confirmAction('Update Status?', `Pool: ${selectedPool}`)) {
-            const status = await poolLogic.updateStatus(addressBook, selectedPool, txParams);
+            const status = await poolLogic.updateStatus(selectedPool, txParams);
             console.log(`New pool status: ${status}`);
           }
           break;
@@ -251,14 +215,14 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
 
           if (await confirmAction('Set Status?',
             `Pool: ${selectedPool}\nNew Status: ${status === 0 ? 'Active' : 'Deprecated'}`)) {
-            await poolLogic.setStatus(addressBook, selectedPool, status, txParams);
+            await poolLogic.setStatus(selectedPool, status, txParams);
           }
           break;
         }
 
         case 'Gulp Emissions': {
           if (await confirmAction('Gulp Emissions?', `Pool: ${selectedPool}`)) {
-            const amount = await poolLogic.gulpEmissions(addressBook, selectedPool, txParams);
+            const amount = await poolLogic.gulpEmissions(selectedPool, txParams);
             console.log(`Gulped amount: ${amount}`);
           }
           break;
@@ -266,8 +230,8 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
 
         case 'Set Emissions Config': {
           if (await confirmAction('Set Emissions Config?',
-            `Pool: ${selectedPool}\n\nEmission Config:\n`)) {
-            await poolLogic.setEmissionsConfig(addressBook, selectedPool, POOL_EMISSION_METADATA, txParams);
+            `Pool: ${selectedPool}\n\nEmission Config:\n${JSON.stringify(POOL_EMISSION_METADATA, null, 2)}`)) {
+            await poolLogic.setEmissionsConfig(selectedPool, POOL_EMISSION_METADATA, txParams);
           }
           break;
         }
@@ -293,7 +257,7 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
 
           if (await confirmAction('Claim?',
             `Pool: ${selectedPool}\nFrom: ${from}\nTo: ${to}\nReserve Token IDs: ${reserveTokenIds.join(', ')}`)) {
-            const amount = await poolLogic.claim(addressBook, selectedPool, from, reserveTokenIds, to, txParams);
+            const amount = await poolLogic.claim(selectedPool, from, reserveTokenIds, to, txParams);
             console.log(`Claimed amount: ${amount}`);
           }
           break;
@@ -319,14 +283,14 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
 
           if (await confirmAction('Create Liquidation Auction?',
             `Pool: ${selectedPool}\nUser: ${user}\nPercentage: ${percent}%`)) {
-            await poolLogic.newLiquidationAuction(addressBook, selectedPool, user, percent, txParams);
+            await poolLogic.newLiquidationAuction(selectedPool, user, percent, txParams);
           }
           break;
         }
 
         case 'New Bad Debt Auction': {
           if (await confirmAction('Create Bad Debt Auction?', `Pool: ${selectedPool}`)) {
-            await poolLogic.newBadDebtAuction(addressBook, selectedPool, txParams);
+            await poolLogic.newBadDebtAuction(selectedPool, txParams);
           }
           break;
         }
@@ -343,18 +307,13 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
 
           const assets: string[] = [];
           for (let i = 0; i < assetCount; i++) {
-            const { asset } = await inquirer.prompt([{
-              type: 'input',
-              name: 'asset',
-              message: `Enter asset address ${i + 1}:`,
-              validate: (input) => input.trim() !== '' || 'Asset address cannot be empty'
-            }]);
+            const asset = await selectToken(addressBook, `Select asset ${i + 1}:`);
             assets.push(asset);
           }
 
           if (await confirmAction('Create Interest Auction?',
             `Pool: ${selectedPool}\nAssets:\n${assets.join('\n')}`)) {
-            await poolLogic.newInterestAuction(addressBook, selectedPool, assets, txParams);
+            await poolLogic.newInterestAuction(selectedPool, assets, txParams);
           }
           break;
         }
@@ -371,7 +330,7 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
 
           if (await confirmAction('Backstop Deposit?',
             `Pool: ${selectedPool}\nAmount: ${amount}`)) {
-            await poolLogic.backstopDeposit(addressBook, selectedPool, amount, txParams);
+            await poolLogic.backstopDeposit(addressBook.getContract("backstop"), selectedPool, amount, txParams);
           }
           break;
         }
@@ -386,7 +345,7 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
 
           if (await confirmAction('Add Pool to Reward Zone?',
             `Pool to Add: ${selectedPool}\nPool to Remove: ${removePool || 'None'}`)) {
-            await poolLogic.addPoolToRewardZone(addressBook, selectedPool, removePool, txParams);
+            await poolLogic.addPoolToRewardZone(addressBook.getContract("backstop"), selectedPool, removePool, txParams);
           }
           break;
         }
