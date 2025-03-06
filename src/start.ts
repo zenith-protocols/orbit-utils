@@ -11,12 +11,14 @@ import handleOracle from './cli/oracleCli.js';
 import handleTreasury from './cli/treasuryCli.js';
 import handleBridgeOracle from './cli/bridgeOracleCli.js';
 import { confirmAction, selectNetwork } from './utils/utils.js';
+import handleGovernor from './cli/governorCli.js';
 
 async function handleOrbitActions(addressBook: AddressBook, txParams: TxParams) {
   const orbitOptions = [
     'Admin',
     'Treasury',
-    'Bridge Oracle'
+    'Bridge Oracle',
+    'Soroban Governor'
   ];
 
   while (true) {
@@ -43,6 +45,10 @@ async function handleOrbitActions(addressBook: AddressBook, txParams: TxParams) 
         }
         case 'Bridge Oracle': {
           await handleBridgeOracle(addressBook, txParams);
+          break;
+        }
+        case 'Soroban Governor': {
+          await handleGovernor(addressBook, txParams);
           break;
         }
       }
