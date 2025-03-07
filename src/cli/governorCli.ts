@@ -4,6 +4,7 @@ import { TxParams } from '../utils/tx.js';
 import { confirmAction } from '../utils/utils.js';
 import { selectToken, promptForAsset } from '../utils/utils.js';
 import * as governorLogic from '../logic/governorLogic.js';
+import { GovernorSettings, ProposalAction } from '../utils/governor_utils.js';
 
 async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
   const governorOptions = [
@@ -17,7 +18,7 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
     'Execute Proposal',
     'Cancel Proposal',
     'Vote',
-    'Get Vote',
+    'Get Vote Count',
     'Get Proposal Votes',
   ];
 
@@ -33,42 +34,160 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
 
     if (action === 'Back') break;
 
+    // proposal action part start
+    async function promptCalldata() {
+      const { contract_id, functionName } = await inquirer.prompt([
+        { type: 'input', name: 'contract_id', message: 'Enter contract ID:' },
+        { type: 'input', name: 'functionName', message: 'Enter function name:' }
+      ]);
+
+      return [{ contract_id, function: functionName, args: [], auths: [] }];
+    }
+
+    async function promptUpgrade() {
+      const { bufferData } = await inquirer.prompt([
+        { type: 'input', name: 'bufferData', message: 'Enter upgrade data (hex string):' }
+      ]);
+      return [Buffer.from(bufferData, 'hex')];
+    }
+
+    async function promptSettings() {
+      const {
+        counting_type,
+        grace_period,
+        proposal_threshold,
+        quorum,
+        timelock,
+        vote_delay,
+        vote_period,
+        vote_threshold,
+      } = await inquirer.prompt([
+        { type: 'number', name: 'counting_type', message: 'Enter counting type (u32):', filter: Number },
+        { type: 'number', name: 'grace_period', message: 'Enter grace period (u32):', filter: Number },
+        {
+          type: 'string', name: 'proposal_threshold', message: 'Enter proposal threshold (i128):', validate: (input: string) => {
+            if (!/^\d+$/.test(input)) return 'Please enter a valid integer';
+            return true;
+          }
+        },
+        { type: 'number', name: 'quorum', message: 'Enter quorum (BPS, u32):', filter: Number },
+        { type: 'number', name: 'timelock', message: 'Enter timelock (u32):', filter: Number },
+        { type: 'number', name: 'vote_delay', message: 'Enter vote delay (u32):', filter: Number },
+        { type: 'number', name: 'vote_period', message: 'Enter vote period (u32):', filter: Number },
+        { type: 'number', name: 'vote_threshold', message: 'Enter vote threshold (BPS, u32):', filter: Number }
+      ]);
+      return [{
+        counting_type,
+        grace_period,
+        proposal_threshold: BigInt(proposal_threshold),
+        quorum,
+        timelock,
+        vote_delay,
+        vote_period,
+        vote_threshold,
+      }];
+    }
+
+    async function promptCouncil() {
+      const { councilAddress } = await inquirer.prompt([
+        { type: 'input', name: 'councilAddress', message: 'Enter council address:' }
+      ]);
+      return [councilAddress];
+    }
+    // proposal action part end
+
     try {
       const contract = addressBook.getContract('governor');
 
       switch (action) {
         case 'Initialize': {
           const votes = await selectToken(addressBook, 'Select votes address:');
-          const council = await selectToken(addressBook, 'Select council address:');
-          const settings = await inquirer.prompt([
+          const { council } = await inquirer.prompt([
             {
               type: 'input',
-              name: 'settings',
-              message: 'Enter governor settings (as JSON):',
-              validate: (input: string) => {
-                try {
-                  JSON.parse(input);
-                  return true;
-                } catch {
-                  return 'Invalid JSON format for settings';
-                }
-              },
-            },
+              name: 'council',
+              message: 'Enter council address:',
+              validate: (input: string) => input.trim() !== '' || 'Council address cannot be empty'
+            }
           ]);
 
-          const parsedSettings = JSON.parse(settings.settings);
+          const {
+            counting_type,
+            grace_period,
+            proposal_threshold,
+            quorum,
+            timelock,
+            vote_delay,
+            vote_period,
+            vote_threshold
+          } = await inquirer.prompt([
+            {
+              type: 'number',
+              name: 'counting_type',
+              message: 'Enter counting type:',
+            },
+            {
+              type: 'number',
+              name: 'grace_period',
+              message: 'Enter grace period (in blocks or seconds):',
+            },
+            {
+              type: 'input',
+              name: 'proposal_threshold',
+              message: 'Enter proposal threshold (big integer value):',
+              validate: (input: string) => {
+                if (!/^\d+$/.test(input)) return 'Please enter a valid integer';
+                return true;
+              }
+            },
+            {
+              type: 'number',
+              name: 'quorum',
+              message: 'Enter quorum (percentage required for approval):',
+            },
+            {
+              type: 'number',
+              name: 'timelock',
+              message: 'Enter timelock duration (in blocks or seconds):',
+            },
+            {
+              type: 'number',
+              name: 'vote_delay',
+              message: 'Enter vote delay (in blocks or seconds before voting starts):',
+            },
+            {
+              type: 'number',
+              name: 'vote_period',
+              message: 'Enter vote period (duration of voting in blocks or seconds):',
+            },
+            {
+              type: 'number',
+              name: 'vote_threshold',
+              message: 'Enter vote threshold (percentage required for passing):',
+            }
+          ]);
 
+          const settings: GovernorSettings = {
+            counting_type,
+            grace_period,
+            proposal_threshold: BigInt(proposal_threshold),
+            quorum,
+            timelock,
+            vote_delay,
+            vote_period,
+            vote_threshold
+          };
           if (
             await confirmAction(
               'Initialize Governor?',
-              `Votes: ${votes}\nCouncil: ${council}\nSettings: ${JSON.stringify(parsedSettings)}`
+              `Votes: ${votes}\nCouncil: ${council}\nSettings: ${JSON.stringify(settings)}`
             )
           ) {
             await governorLogic.initializeGovernor(
               contract,
               votes,
               council,
-              parsedSettings,
+              settings,
               txParams
             );
           }
@@ -76,59 +195,94 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
         }
 
         case 'Settings': {
-          const result = await governorLogic.getGovernorSettings(contract, txParams);
-          console.log('Governor Settings:', result);
+          if (await confirmAction('Get Settings?', '')) {
+            const settings = await governorLogic.getGovernorSettings(contract, txParams);
+            console.log(`Settings: ${settings}`);
+          }
           break;
         }
 
         case 'Council': {
-          const council = await governorLogic.getCouncilAddress(contract, txParams);
-          console.log('Council Address:', council);
+          if (await confirmAction('Get Council?', '')) {
+            const council = governorLogic.getGovernorCouncil(contract, txParams)
+            console.log(`Council: ${council}`);
+          }
           break;
         }
 
         case 'Vote Token': {
-          const voteToken = await governorLogic.getVoteToken(contract, txParams);
-          console.log('Vote Token Address:', voteToken);
+          if (await confirmAction('Get Vote Token?', '')) {
+            const voteToken = governorLogic.getGovernorVoteToken(contract, txParams);
+            console.log('Vote Token Address:', voteToken);
+          }
           break;
         }
 
         case 'Propose': {
-          const creator = await selectToken(addressBook, 'Select creator address:');
-          const title = await inquirer.prompt([
+          const { creator } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'creator',
+              message: 'Enter proposal creator:',
+            },
+          ]);
+          const { title } = await inquirer.prompt([
             {
               type: 'input',
               name: 'title',
               message: 'Enter proposal title:',
             },
           ]);
-          const description = await inquirer.prompt([
+          const { description } = await inquirer.prompt([
             {
               type: 'input',
               name: 'description',
               message: 'Enter proposal description:',
             },
           ]);
-          const action = await inquirer.prompt([
+          const { action } = await inquirer.prompt([
             {
-              type: 'input',
+              type: 'list',
               name: 'action',
-              message: 'Enter proposal action (e.g., Calldata, Upgrade, etc.):',
+              message: 'Select proposal action:',
+              choices: ['Calldata', 'Upgrade', 'Settings', 'Council', 'Snapshot']
             },
           ]);
+
+          let values;
+
+          switch (action) {
+            case 'Calldata':
+              values = await promptCalldata();
+              break;
+            case 'Upgrade':
+              values = await promptUpgrade();
+              break;
+            case 'Settings':
+              values = await promptSettings();
+              break;
+            case 'Council':
+              values = await promptCouncil();
+              break;
+            case 'Snapshot':
+              values = undefined;
+              break;
+          }
+
+          const proposalAction = { tag: action, values };
 
           if (
             await confirmAction(
               'Create Proposal?',
-              `Title: ${title.title}\nDescription: ${description.description}\nAction: ${action.action}`
+              `Title: ${title}\nDescription: ${description}\nCreator: ${creator}\nAction: ${action}`
             )
           ) {
-            await governorLogic.proposeGovernanceAction(
+            await governorLogic.proposeGovernaceAction(
               contract,
               creator,
-              title.title,
-              description.description,
-              action.action,
+              title,
+              description,
+              proposalAction as ProposalAction,
               txParams
             );
           }
@@ -136,19 +290,17 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
         }
 
         case 'Get Proposal': {
-          const proposalId = await inquirer.prompt([
+          const { proposal_id } = await inquirer.prompt([
             {
-              type: 'input',
-              name: 'proposalId',
+              type: 'number',
+              name: 'proposal_id',
               message: 'Enter proposal ID to fetch:',
-              validate: (input: string) =>
-                /^[0-9]+$/.test(input) || 'Please enter a valid proposal ID',
             },
           ]);
 
           const proposal = await governorLogic.getProposalInfo(
             contract,
-            parseInt(proposalId.proposalId),
+            proposal_id,
             txParams
           );
           console.log('Proposal:', proposal);
@@ -156,37 +308,33 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
         }
 
         case 'Close Proposal': {
-          const proposalId = await inquirer.prompt([
+          const { proposal_id } = await inquirer.prompt([
             {
-              type: 'input',
-              name: 'proposalId',
+              type: 'number',
+              name: 'proposal_id',
               message: 'Enter proposal ID to close:',
-              validate: (input: string) =>
-                /^[0-9]+$/.test(input) || 'Please enter a valid proposal ID',
             },
           ]);
 
-          if (await confirmAction('Close Proposal?', `Proposal ID: ${proposalId.proposalId}`)) {
-            await governorLogic.closeProposal(contract, parseInt(proposalId.proposalId), txParams);
+          if (await confirmAction('Close Proposal?', `Proposal ID: ${proposal_id}`)) {
+            await governorLogic.closeProposal(contract, proposal_id, txParams);
           }
           break;
         }
 
         case 'Execute Proposal': {
-          const proposalId = await inquirer.prompt([
+          const { proposal_id } = await inquirer.prompt([
             {
-              type: 'input',
-              name: 'proposalId',
+              type: 'number',
+              name: 'proposal_id',
               message: 'Enter proposal ID to execute:',
-              validate: (input: string) =>
-                /^[0-9]+$/.test(input) || 'Please enter a valid proposal ID',
             },
           ]);
 
-          if (await confirmAction('Execute Proposal?', `Proposal ID: ${proposalId.proposalId}`)) {
+          if (await confirmAction('Execute Proposal?', `Proposal ID: ${proposal_id}`)) {
             await governorLogic.executeProposal(
               contract,
-              parseInt(proposalId.proposalId),
+              parseInt(proposal_id),
               txParams
             );
           }
@@ -194,27 +342,31 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
         }
 
         case 'Cancel Proposal': {
-          const from = await selectToken(addressBook, 'Select address to cancel from:');
-          const proposalId = await inquirer.prompt([
+          const { from } = await inquirer.prompt([
             {
               type: 'input',
-              name: 'proposalId',
+              name: 'from',
+              message: 'Enter from address:',
+            },
+          ]);
+          const { proposal_id } = await inquirer.prompt([
+            {
+              type: 'number',
+              name: 'proposal_id',
               message: 'Enter proposal ID to cancel:',
-              validate: (input: string) =>
-                /^[0-9]+$/.test(input) || 'Please enter a valid proposal ID',
             },
           ]);
 
           if (
             await confirmAction(
               'Cancel Proposal?',
-              `From: ${from}\nProposal ID: ${proposalId.proposalId}`
+              `From: ${from}\nProposal ID: ${proposal_id}`
             )
           ) {
             await governorLogic.cancelProposal(
               contract,
               from,
-              parseInt(proposalId.proposalId),
+              proposal_id,
               txParams
             );
           }
@@ -222,74 +374,71 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
         }
 
         case 'Vote': {
-          const voter = await selectToken(addressBook, 'Select voter address:');
-          const proposalId = await inquirer.prompt([
+          const { voter } = await inquirer.prompt([
             {
               type: 'input',
-              name: 'proposalId',
-              message: 'Enter proposal ID to vote on:',
-              validate: (input: string) =>
-                /^[0-9]+$/.test(input) || 'Please enter a valid proposal ID',
+              name: 'voter',
+              message: 'Enter voter address:',
             },
           ]);
-          const support = await inquirer.prompt([
+          const { proposal_id } = await inquirer.prompt([
             {
-              type: 'input',
+              type: 'number',
+              name: 'proposal_id',
+              message: 'Enter proposal ID to vote:'
+            }
+          ])
+          const { support } = await inquirer.prompt([
+            {
+              type: 'number',
               name: 'support',
-              message: 'Enter vote support (1 for approve, 0 for reject):',
-              validate: (input: string) => /^[01]$/.test(input) || 'Please enter either 1 or 0',
+              message: 'Enter vote support:',
             },
           ]);
 
           await governorLogic.voteOnProposal(
             contract,
             voter,
-            parseInt(proposalId.proposalId),
-            parseInt(support.support),
+            proposal_id,
+            support,
             txParams
           );
           break;
         }
 
-        case 'Get Vote': {
-          const voter = await selectToken(addressBook, 'Select voter address:');
-          const proposalId = await inquirer.prompt([
+        case 'Get Vote Count': {
+          const proposal_id = await inquirer.prompt([
             {
-              type: 'input',
-              name: 'proposalId',
-              message: 'Enter proposal ID to get vote for:',
-              validate: (input: string) =>
-                /^[0-9]+$/.test(input) || 'Please enter a valid proposal ID',
-            },
-          ]);
-
-          const voteStatus = await governorLogic.getVoteStatus(
-            contract,
-            voter,
-            parseInt(proposalId.proposalId),
-            txParams
-          );
-          console.log('Vote Status:', voteStatus);
-          break;
-        }
-
-        case 'Get Proposal Votes': {
-          const proposalId = await inquirer.prompt([
-            {
-              type: 'input',
-              name: 'proposalId',
-              message: 'Enter proposal ID to get vote count:',
-              validate: (input: string) =>
-                /^[0-9]+$/.test(input) || 'Please enter a valid proposal ID',
+              type: 'number',
+              name: 'proposal_id',
+              message: 'Enter proposal ID to get vote count:'
             },
           ]);
 
           const voteCount = await governorLogic.getVoteCountForProposal(
             contract,
-            parseInt(proposalId.proposalId),
+            proposal_id,
             txParams
           );
           console.log('Vote Count:', voteCount);
+          break;
+        }
+
+        case 'Get Proposal Votes': {
+          const proposal_id = await inquirer.prompt([
+            {
+              type: 'number',
+              name: 'proposal_id',
+              message: 'Enter proposal ID to get propsal votes:'
+            },
+          ]);
+
+          const proposalVotes = await governorLogic.getProposalVotes(
+            contract,
+            proposal_id,
+            txParams
+          );
+          console.log('Proposal Votes:', proposalVotes);
           break;
         }
       }

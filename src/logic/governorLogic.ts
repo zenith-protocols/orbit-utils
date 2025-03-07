@@ -1,12 +1,11 @@
 import { Address } from '@stellar/stellar-sdk';
+import { Spec as ContractSpec, Option, i128, u32, u64 } from '@stellar/stellar-sdk/contract';
 import {
   GovernorContract,
-  GovernorSettings,
-  GovernorProposeArgs,
-  GovernorCancelArgs,
-  GovernorVoteArgs,
-  GovernorVoteCount,
 } from '../external/governor.js';
+import {
+  GovernorSettings, ProposalAction
+} from '../utils/governor_utils.js'
 import { invokeSorobanOperation, TxParams } from '../utils/tx.js';
 
 export async function initializeGovernor(
@@ -16,13 +15,13 @@ export async function initializeGovernor(
   settings: GovernorSettings,
   txParams: TxParams
 ) {
-  console.log('Initializing Governor...');
+  console.log(`Initializing Governor...`);
   const governorContract = new GovernorContract(contract);
   try {
     await invokeSorobanOperation(
       governorContract.initialize({
-        votes: Address.fromString(votes),
-        council: Address.fromString(council),
+        votes,
+        council,
         settings,
       }),
       GovernorContract.parsers.initialize,
@@ -35,12 +34,81 @@ export async function initializeGovernor(
   }
 }
 
-export async function proposeGovernanceAction(
+export async function getGovernorSettings(
+  contract: string,
+  txParams: TxParams
+) {
+  console.log(`Getting governor settings...`);
+  const governorContract = new GovernorContract(contract);
+  try {
+    const settings = await invokeSorobanOperation(
+      governorContract.settings(),
+      GovernorContract.parsers.settings,
+      txParams
+    );
+    console.log(`Successfully got settings: ${settings}\n`);
+    if (settings === undefined) {
+        throw new Error('Failed to get settings: settings is undefined');
+    }
+    return settings;
+  } catch (e) {
+    console.log('Failed to get settings', e);
+    throw e;
+  }
+}
+
+export async function getGovernorCouncil(
+  contract: string,
+  txParams: TxParams
+) {
+  console.log(`Getting governor council...`);
+  const governorContract = new GovernorContract(contract);
+  try {
+    const council = await invokeSorobanOperation(
+      governorContract.council(),
+      GovernorContract.parsers.council,
+      txParams
+    );
+    console.log(`Successfully got council: ${council}\n`);
+    if (council == undefined) {
+      console.log(`Failed to get council: council is undefined`);
+    }
+    return council
+  } catch (e) {
+    console.log('Failed to get council', e);
+    throw e;
+  }
+}
+
+export async function getGovernorVoteToken(
+  contract: string,
+  txParams: TxParams
+) {
+  console.log(`Getting governor vote token...`);
+  const governorContract = new GovernorContract(contract);
+  try {
+    const voteToken = await invokeSorobanOperation(
+      governorContract.vote_token(),
+      GovernorContract.parsers.vote_token,
+      txParams
+    );
+    console.log(`Successfully got vote token: ${voteToken}\n`);
+    if (voteToken == undefined) {
+      console.log('Failed to get vote token: voteToken is undefined');
+    }
+    return voteToken;
+  } catch (e) {
+    console.log('Failed to get vote token', e);
+    throw e;
+  }
+}
+
+export async function proposeGovernaceAction(
   contract: string,
   creator: string,
   title: string,
   description: string,
-  action: string, // ProposalActionEnum (Calldata, Upgrade, etc.)
+  action: ProposalAction,
   txParams: TxParams
 ) {
   console.log('Proposing governance action...');
@@ -48,17 +116,87 @@ export async function proposeGovernanceAction(
   try {
     await invokeSorobanOperation(
       governorContract.propose({
-        creator: Address.fromString(creator),
+        creator,
         title,
         description,
         action,
-      } as GovernorProposeArgs),
+      }),
       GovernorContract.parsers.propose,
       txParams
     );
     console.log(`Governance action proposed successfully.`);
   } catch (e) {
     console.log('Failed to propose governance action', e);
+    throw e;
+  }
+}
+
+export async function getProposalInfo(
+  contract: string,
+  proposal_id: u32,
+  txParams: TxParams
+) {
+  console.log('Getting proposal info...');
+  const governorContract = new GovernorContract(contract);
+  try {
+    const proposalInfo = await invokeSorobanOperation(
+      governorContract.getProposal({
+        proposal_id
+      }),
+      GovernorContract.parsers.getProposal,
+      txParams
+    );
+    console.log(`Successfully got proposal info: ${proposalInfo}\n`);
+    if (proposalInfo == undefined) {
+      console.log('Failed to get proposal info: proposalInfo is undefined');  
+    }
+    return proposalInfo;
+  } catch (e) {
+    console.log('Failed to get proposal info', e);
+    throw e;
+  }
+}
+
+export async function closeProposal(
+  contract: string, 
+  proposal_id: u32, 
+  txParams: TxParams
+) {
+  console.log('Closing proposal...');
+  const governorContract = new GovernorContract(contract);
+  try {
+    await invokeSorobanOperation(
+      governorContract.close({
+        proposal_id
+      }),
+      GovernorContract.parsers.close,
+      txParams
+    );
+    console.log(`Proposal closed successfully.`);
+  } catch (e) {
+    console.log('Failed to close proposal', e);
+    throw e;
+  }
+}
+
+export async function executeProposal(
+  contract: string, 
+  proposal_id: u32, 
+  txParams: TxParams
+) {
+  console.log('Executing proposal...');
+  const governorContract = new GovernorContract(contract);
+  try {
+    await invokeSorobanOperation(
+      governorContract.execute({
+        proposal_id
+      }),
+      GovernorContract.parsers.execute,
+      txParams
+    );
+    console.log(`Proposal executed successfully.`);
+  } catch (e) {
+    console.log('Failed to execute proposal', e);
     throw e;
   }
 }
@@ -74,9 +212,9 @@ export async function cancelProposal(
   try {
     await invokeSorobanOperation(
       governorContract.cancel({
-        from: Address.fromString(from),
+        from,
         proposal_id,
-      } as GovernorCancelArgs),
+      }),
       GovernorContract.parsers.cancel,
       txParams
     );
@@ -99,65 +237,16 @@ export async function voteOnProposal(
   try {
     await invokeSorobanOperation(
       governorContract.vote({
-        voter: Address.fromString(voter),
+        voter,
         proposal_id,
         support,
-      } as GovernorVoteArgs),
+      }),
       GovernorContract.parsers.vote,
       txParams
     );
     console.log(`Vote cast successfully.`);
   } catch (e) {
     console.log('Failed to vote on proposal', e);
-    throw e;
-  }
-}
-
-export async function closeProposal(contract: string, proposal_id: u32, txParams: TxParams) {
-  console.log('Closing proposal...');
-  const governorContract = new GovernorContract(contract);
-  try {
-    await invokeSorobanOperation(
-      governorContract.close(proposal_id),
-      GovernorContract.parsers.close,
-      txParams
-    );
-    console.log(`Proposal closed successfully.`);
-  } catch (e) {
-    console.log('Failed to close proposal', e);
-    throw e;
-  }
-}
-
-export async function executeProposal(contract: string, proposal_id: u32, txParams: TxParams) {
-  console.log('Executing proposal...');
-  const governorContract = new GovernorContract(contract);
-  try {
-    await invokeSorobanOperation(
-      governorContract.execute(proposal_id),
-      GovernorContract.parsers.execute,
-      txParams
-    );
-    console.log(`Proposal executed successfully.`);
-  } catch (e) {
-    console.log('Failed to execute proposal', e);
-    throw e;
-  }
-}
-
-export async function getProposalInfo(contract: string, proposal_id: u32, txParams: TxParams) {
-  console.log('Getting proposal info...');
-  const governorContract = new GovernorContract(contract);
-  try {
-    const result = await invokeSorobanOperation(
-      governorContract.getProposal(proposal_id),
-      GovernorContract.parsers.getProposal,
-      txParams
-    );
-    console.log(`Successfully fetched proposal info:`, result);
-    return result;
-  } catch (e) {
-    console.log('Failed to get proposal info', e);
     throw e;
   }
 }
@@ -170,37 +259,46 @@ export async function getVoteCountForProposal(
   console.log('Getting vote count for proposal...');
   const governorContract = new GovernorContract(contract);
   try {
-    const result = await invokeSorobanOperation(
-      governorContract.getProposalVotes(proposal_id),
+    const voteCount = await invokeSorobanOperation(
+      governorContract.getProposalVotes({
+        proposal_id
+      }),
       GovernorContract.parsers.getProposalVotes,
       txParams
     );
-    console.log(`Vote count for proposal:`, result);
-    return result;
+    console.log(`Successfully got vote count: ${voteCount}\n`);
+    if (voteCount == undefined) {
+      console.log('Failed to get vote count for proposal: voteCount is undefined');  
+    }
+    return voteCount;
   } catch (e) {
     console.log('Failed to get vote count for proposal', e);
     throw e;
   }
 }
 
-export async function getVoteStatus(
+export async function getProposalVotes(
   contract: string,
-  voter: string,
   proposal_id: u32,
   txParams: TxParams
 ) {
-  console.log('Getting vote status...');
+  console.log('Getting proposal votes...');
   const governorContract = new GovernorContract(contract);
   try {
-    const result = await invokeSorobanOperation(
-      governorContract.getVote(Address.fromString(voter), proposal_id),
-      GovernorContract.parsers.getVote,
+    const proposalVotes = await invokeSorobanOperation(
+      governorContract.getProposalVotes({
+        proposal_id
+      }),
+      GovernorContract.parsers.getProposalVotes,
       txParams
     );
-    console.log(`Vote status:`, result);
-    return result;
+    console.log(`Successfully got proposal votes: ${proposalVotes}\n`);
+    if (proposalVotes == undefined) {
+      console.log('Failed to get proposal votes: proposalVotes is undefined');
+    }
+    return proposalVotes;
   } catch (e) {
-    console.log('Failed to get vote status', e);
+    console.log('Failed to get proposal votes', e);
     throw e;
   }
 }
