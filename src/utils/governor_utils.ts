@@ -84,7 +84,7 @@ export type GovernorDataKey =
 /**
  * The governor settings for managing proposals
  */
-export interface GovernorSettings {
+export interface  GovernorSettings {
   /**
    * Determine which votes to count against the quorum out of for, against, and abstain. The value is encoded
    * such that only the last 3 bits are considered, and follows the structure `MSB...{against}{for}{abstain}`,

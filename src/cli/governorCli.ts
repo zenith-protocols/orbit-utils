@@ -22,9 +22,19 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
     'Get Proposal Votes',
   ];
 
+  const jsonToString = (obj: object) => {
+    const jsonString = JSON.stringify(obj, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    );
+
+    return jsonString
+  }
+
+
   while (true) {
     const { action } = await inquirer.prompt([
       {
+
         type: 'list',
         name: 'action',
         message: 'Select a governor action:',
@@ -36,12 +46,20 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
 
     // proposal action part start
     async function promptCalldata() {
-      const { contract_id, functionName } = await inquirer.prompt([
-        { type: 'input', name: 'contract_id', message: 'Enter contract ID:' },
-        { type: 'input', name: 'functionName', message: 'Enter function name:' }
+      // const { contract_id, functionName } = await inquirer.prompt([
+      //   { type: 'input', name: 'contract_id', message: 'Enter contract ID:' },
+      //   { type: 'input', name: 'functionName', message: 'Enter function name:' }
+      // ]);
+
+      const calldata = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'action',
+          message: 'Enter proposal action:',
+        },
       ]);
 
-      return [{ contract_id, function: functionName, args: [], auths: [] }];
+      return JSON.parse(calldata);
     }
 
     async function promptUpgrade() {
@@ -180,7 +198,7 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
           if (
             await confirmAction(
               'Initialize Governor?',
-              `Votes: ${votes}\nCouncil: ${council}\nSettings: ${JSON.stringify(settings)}`
+              `Votes: ${votes}\nCouncil: ${council}\nSettings: ${jsonToString(settings)}`
             )
           ) {
             await governorLogic.initializeGovernor(
@@ -197,14 +215,22 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
         case 'Settings': {
           if (await confirmAction('Get Settings?', '')) {
             const settings = await governorLogic.getGovernorSettings(contract, txParams);
-            console.log(`Settings: ${settings}`);
+            console.log(`Settings: \n 
+              counting_type: ${settings?.counting_type}\n, 
+              grace_period: ${settings?.grace_period}\n, 
+              proposal_threshold: ${settings?.proposal_threshold}\n,
+              quorum: ${settings?.quorum}\n,
+              timelock: ${settings?.timelock}\n,
+              vote_delay: ${settings?.vote_delay}\n,
+              vote_period: ${settings?.vote_period}\n,
+              vote_threshold: ${settings?.vote_threshold}\n`);
           }
           break;
         }
 
         case 'Council': {
           if (await confirmAction('Get Council?', '')) {
-            const council = governorLogic.getGovernorCouncil(contract, txParams)
+            const council = await governorLogic.getGovernorCouncil(contract, txParams)
             console.log(`Council: ${council}`);
           }
           break;
@@ -212,7 +238,7 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
 
         case 'Vote Token': {
           if (await confirmAction('Get Vote Token?', '')) {
-            const voteToken = governorLogic.getGovernorVoteToken(contract, txParams);
+            const voteToken = await governorLogic.getGovernorVoteToken(contract, txParams);
             console.log('Vote Token Address:', voteToken);
           }
           break;
@@ -247,7 +273,7 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
               message: 'Select proposal action:',
               choices: ['Calldata', 'Upgrade', 'Settings', 'Council', 'Snapshot']
             },
-          ]);
+          ]);      
 
           let values;
 
@@ -269,7 +295,10 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
               break;
           }
 
-          const proposalAction = { tag: action, values };
+          const proposalAction = {
+            tag: action,
+            values
+          };
 
           if (
             await confirmAction(

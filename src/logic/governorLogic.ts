@@ -1,11 +1,6 @@
-import { Address } from '@stellar/stellar-sdk';
 import { Spec as ContractSpec, Option, i128, u32, u64 } from '@stellar/stellar-sdk/contract';
-import {
-  GovernorContract,
-} from '../external/governor.js';
-import {
-  GovernorSettings, ProposalAction
-} from '../utils/governor_utils.js'
+import { GovernorContract } from '../external/governor.js';
+import { GovernorSettings, ProposalAction } from '../utils/governor_utils.js'
 import { invokeSorobanOperation, TxParams } from '../utils/tx.js';
 
 export async function initializeGovernor(
@@ -46,9 +41,9 @@ export async function getGovernorSettings(
       GovernorContract.parsers.settings,
       txParams
     );
-    console.log(`Successfully got settings: ${settings}\n`);
+    // console.log(`Successfully got settings: ${settings}\n`);
     if (settings === undefined) {
-        throw new Error('Failed to get settings: settings is undefined');
+      throw new Error('Failed to get settings: settings is undefined');
     }
     return settings;
   } catch (e) {
@@ -69,7 +64,7 @@ export async function getGovernorCouncil(
       GovernorContract.parsers.council,
       txParams
     );
-    console.log(`Successfully got council: ${council}\n`);
+    // console.log(`Successfully got council: ${council}\n`);
     if (council == undefined) {
       console.log(`Failed to get council: council is undefined`);
     }
@@ -92,7 +87,7 @@ export async function getGovernorVoteToken(
       GovernorContract.parsers.vote_token,
       txParams
     );
-    console.log(`Successfully got vote token: ${voteToken}\n`);
+    // console.log(`Successfully got vote token: ${voteToken}\n`);
     if (voteToken == undefined) {
       console.log('Failed to get vote token: voteToken is undefined');
     }
@@ -146,9 +141,9 @@ export async function getProposalInfo(
       GovernorContract.parsers.getProposal,
       txParams
     );
-    console.log(`Successfully got proposal info: ${proposalInfo}\n`);
+    // console.log(`Successfully got proposal info: ${proposalInfo}\n`);
     if (proposalInfo == undefined) {
-      console.log('Failed to get proposal info: proposalInfo is undefined');  
+      console.log('Failed to get proposal info: proposalInfo is undefined');
     }
     return proposalInfo;
   } catch (e) {
@@ -158,8 +153,8 @@ export async function getProposalInfo(
 }
 
 export async function closeProposal(
-  contract: string, 
-  proposal_id: u32, 
+  contract: string,
+  proposal_id: u32,
   txParams: TxParams
 ) {
   console.log('Closing proposal...');
@@ -180,8 +175,8 @@ export async function closeProposal(
 }
 
 export async function executeProposal(
-  contract: string, 
-  proposal_id: u32, 
+  contract: string,
+  proposal_id: u32,
   txParams: TxParams
 ) {
   console.log('Executing proposal...');
@@ -268,7 +263,7 @@ export async function getVoteCountForProposal(
     );
     console.log(`Successfully got vote count: ${voteCount}\n`);
     if (voteCount == undefined) {
-      console.log('Failed to get vote count for proposal: voteCount is undefined');  
+      console.log('Failed to get vote count for proposal: voteCount is undefined');
     }
     return voteCount;
   } catch (e) {
