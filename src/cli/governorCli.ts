@@ -214,32 +214,32 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
 
         case 'Settings': {
           if (await confirmAction('Get Settings?', '')) {
-            const settings = await governorLogic.getGovernorSettings(contract, txParams);
-            console.log(`Settings: \n 
-              counting_type: ${settings?.counting_type}\n, 
-              grace_period: ${settings?.grace_period}\n, 
-              proposal_threshold: ${settings?.proposal_threshold}\n,
-              quorum: ${settings?.quorum}\n,
-              timelock: ${settings?.timelock}\n,
-              vote_delay: ${settings?.vote_delay}\n,
-              vote_period: ${settings?.vote_period}\n,
-              vote_threshold: ${settings?.vote_threshold}\n`);
+            await governorLogic.getGovernorSettings(contract, txParams);
+            // console.log(`Settings: \n 
+            //   counting_type: ${settings?.counting_type}\n, 
+            //   grace_period: ${settings?.grace_period}\n, 
+            //   proposal_threshold: ${settings?.proposal_threshold}\n,
+            //   quorum: ${settings?.quorum}\n,
+            //   timelock: ${settings?.timelock}\n,
+            //   vote_delay: ${settings?.vote_delay}\n,
+            //   vote_period: ${settings?.vote_period}\n,
+            //   vote_threshold: ${settings?.vote_threshold}\n`);
           }
           break;
         }
 
         case 'Council': {
           if (await confirmAction('Get Council?', '')) {
-            const council = await governorLogic.getGovernorCouncil(contract, txParams)
-            console.log(`Council: ${council}`);
+            await governorLogic.getGovernorCouncil(contract, txParams)
+            // console.log(`Council: ${council}`);
           }
           break;
         }
 
         case 'Vote Token': {
           if (await confirmAction('Get Vote Token?', '')) {
-            const voteToken = await governorLogic.getGovernorVoteToken(contract, txParams);
-            console.log('Vote Token Address:', voteToken);
+            await governorLogic.getGovernorVoteToken(contract, txParams);
+            // console.log('Vote Token Address:', voteToken);
           }
           break;
         }
@@ -327,12 +327,12 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
             },
           ]);
 
-          const proposal = await governorLogic.getProposalInfo(
+          await governorLogic.getProposalInfo(
             contract,
             proposal_id,
             txParams
           );
-          console.log('Proposal:', proposal);
+          // console.log('Proposal:', proposal);
           break;
         }
 
@@ -444,12 +444,12 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
             },
           ]);
 
-          const voteCount = await governorLogic.getVoteCountForProposal(
+          await governorLogic.getVoteCountForProposal(
             contract,
             proposal_id,
             txParams
           );
-          console.log('Vote Count:', voteCount);
+          // console.log('Vote Count:', voteCount);
           break;
         }
 
@@ -462,12 +462,12 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
             },
           ]);
 
-          const proposalVotes = await governorLogic.getProposalVotes(
+          await governorLogic.getProposalVotes(
             contract,
             proposal_id,
             txParams
           );
-          console.log('Proposal Votes:', proposalVotes);
+          // console.log('Proposal Votes:', proposalVotes);
           break;
         }
       }

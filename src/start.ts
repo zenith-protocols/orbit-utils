@@ -10,6 +10,7 @@ import handleToken from './cli/tokenCli.js';
 import handleOracle from './cli/oracleCli.js';
 import handleTreasury from './cli/treasuryCli.js';
 import handleBridgeOracle from './cli/bridgeOracleCli.js';
+import handleVotes from './cli/votesCli.js';
 import { confirmAction, selectNetwork } from './utils/utils.js';
 import handleGovernor from './cli/governorCli.js';
 
@@ -18,7 +19,8 @@ async function handleOrbitActions(addressBook: AddressBook, txParams: TxParams) 
     'Admin',
     'Treasury',
     'Bridge Oracle',
-    'Soroban Governor'
+    'Soroban Governor',
+    'Bonding Votes'
   ];
 
   while (true) {
@@ -49,6 +51,10 @@ async function handleOrbitActions(addressBook: AddressBook, txParams: TxParams) 
         }
         case 'Soroban Governor': {
           await handleGovernor(addressBook, txParams);
+          break;
+        }
+        case 'Bonding Votes': {
+          await handleVotes(addressBook, txParams);
           break;
         }
       }

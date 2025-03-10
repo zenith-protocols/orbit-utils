@@ -41,7 +41,16 @@ export async function getGovernorSettings(
       GovernorContract.parsers.settings,
       txParams
     );
-    // console.log(`Successfully got settings: ${settings}\n`);
+    console.log(`Successfully got settings:\n
+      counting_type: ${settings?.counting_type}\n, 
+      grace_period: ${settings?.grace_period}\n, 
+      proposal_threshold: ${settings?.proposal_threshold}\n,
+      quorum: ${settings?.quorum}\n,
+      timelock: ${settings?.timelock}\n,
+      vote_delay: ${settings?.vote_delay}\n,
+      vote_period: ${settings?.vote_period}\n,
+      vote_threshold: ${settings?.vote_threshold}\n`
+    );
     if (settings === undefined) {
       throw new Error('Failed to get settings: settings is undefined');
     }
@@ -64,7 +73,7 @@ export async function getGovernorCouncil(
       GovernorContract.parsers.council,
       txParams
     );
-    // console.log(`Successfully got council: ${council}\n`);
+    console.log(`Successfully got council: ${council}\n`);
     if (council == undefined) {
       console.log(`Failed to get council: council is undefined`);
     }
@@ -87,7 +96,7 @@ export async function getGovernorVoteToken(
       GovernorContract.parsers.vote_token,
       txParams
     );
-    // console.log(`Successfully got vote token: ${voteToken}\n`);
+    console.log(`Successfully got vote token: ${voteToken}\n`);
     if (voteToken == undefined) {
       console.log('Failed to get vote token: voteToken is undefined');
     }
@@ -141,7 +150,7 @@ export async function getProposalInfo(
       GovernorContract.parsers.getProposal,
       txParams
     );
-    // console.log(`Successfully got proposal info: ${proposalInfo}\n`);
+    console.log(`Successfully got proposal info: ${proposalInfo}\n`);
     if (proposalInfo == undefined) {
       console.log('Failed to get proposal info: proposalInfo is undefined');
     }
