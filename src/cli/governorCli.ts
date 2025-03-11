@@ -119,8 +119,13 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
 
       switch (action) {
         case 'Initialize': {
-          const votes = await selectToken(addressBook, 'Select votes address:');
-          const { council } = await inquirer.prompt([
+          const { votes, council } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'votes',
+              message: 'Enter votes address:',
+              validate: (input: string) => input.trim() !== '' || 'Vote address cannot be empty'
+            },
             {
               type: 'input',
               name: 'council',
@@ -215,15 +220,6 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
         case 'Settings': {
           if (await confirmAction('Get Settings?', '')) {
             await governorLogic.getGovernorSettings(contract, txParams);
-            // console.log(`Settings: \n 
-            //   counting_type: ${settings?.counting_type}\n, 
-            //   grace_period: ${settings?.grace_period}\n, 
-            //   proposal_threshold: ${settings?.proposal_threshold}\n,
-            //   quorum: ${settings?.quorum}\n,
-            //   timelock: ${settings?.timelock}\n,
-            //   vote_delay: ${settings?.vote_delay}\n,
-            //   vote_period: ${settings?.vote_period}\n,
-            //   vote_threshold: ${settings?.vote_threshold}\n`);
           }
           break;
         }
@@ -231,7 +227,6 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
         case 'Council': {
           if (await confirmAction('Get Council?', '')) {
             await governorLogic.getGovernorCouncil(contract, txParams)
-            // console.log(`Council: ${council}`);
           }
           break;
         }
@@ -239,7 +234,6 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
         case 'Vote Token': {
           if (await confirmAction('Get Vote Token?', '')) {
             await governorLogic.getGovernorVoteToken(contract, txParams);
-            // console.log('Vote Token Address:', voteToken);
           }
           break;
         }
@@ -332,7 +326,6 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
             proposal_id,
             txParams
           );
-          // console.log('Proposal:', proposal);
           break;
         }
 
@@ -449,7 +442,6 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
             proposal_id,
             txParams
           );
-          // console.log('Vote Count:', voteCount);
           break;
         }
 
@@ -467,7 +459,6 @@ async function handleGovernor(addressBook: AddressBook, txParams: TxParams) {
             proposal_id,
             txParams
           );
-          // console.log('Proposal Votes:', proposalVotes);
           break;
         }
       }

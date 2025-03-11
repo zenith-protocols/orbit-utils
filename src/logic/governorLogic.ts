@@ -42,13 +42,13 @@ export async function getGovernorSettings(
       txParams
     );
     console.log(`Successfully got settings:\n
-      counting_type: ${settings?.counting_type}\n, 
-      grace_period: ${settings?.grace_period}\n, 
-      proposal_threshold: ${settings?.proposal_threshold}\n,
-      quorum: ${settings?.quorum}\n,
-      timelock: ${settings?.timelock}\n,
-      vote_delay: ${settings?.vote_delay}\n,
-      vote_period: ${settings?.vote_period}\n,
+      counting_type: ${settings?.counting_type}\n
+      grace_period: ${settings?.grace_period}\n
+      proposal_threshold: ${settings?.proposal_threshold}\n
+      quorum: ${settings?.quorum}\n
+      timelock: ${settings?.timelock}\n
+      vote_delay: ${settings?.vote_delay}\n
+      vote_period: ${settings?.vote_period}\n
       vote_threshold: ${settings?.vote_threshold}\n`
     );
     if (settings === undefined) {
