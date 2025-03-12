@@ -2,7 +2,7 @@ import inquirer from 'inquirer';
 import { AddressBook } from '../utils/address-book.js';
 import * as poolLogic from '../logic/poolLogic.js';
 import { TxParams } from '../utils/tx.js';
-import { ReserveConfig, ReserveEmissionMetadata } from '@blend-capital/blend-sdk';
+import { ReserveConfig, ReserveEmissionMetadata, Request, RequestType, AuctionType, PoolContract } from '@blend-capital/blend-sdk';
 import { confirmAction, selectToken } from '../utils/utils.js';
 
 const RESERVE_CONFIGS: Record<string, ReserveConfig> = {
@@ -81,17 +81,17 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
     // 'New Liquidation Auction',
     // 'New Bad Debt Auction',
     // 'New Interest Auction',
-    'submitToPool',
-    'submitWithAllowance',
-    'flashLoan',
-    'gulp',
-    'newAuction',
-    'getConfig',
-    'getAdmin',
-    'getReserve',
-    'getReserveEmissions',
-    'getUserEmissions',
-    'getMarket',
+    'Submit To Pool',
+    'Submit With Allowance',
+    'Flash Loan',
+    'Gulp',
+    'New Auction',
+    'Get Config',
+    'Get Admin',
+    'Get Reserve',
+    'Get Reserve Emissions',
+    'Get User Emissions',
+    'Get Market',
     'Backstop Deposit',
     'Add Pool to Reward Zone',
     'Remove Pool from Reward Zone'
@@ -108,6 +108,51 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
     ]);
 
     if (action === 'Back') break;
+
+    async function getRequestInput() {
+      const requests: Request[] = [];
+
+      const requestTypeChoices = Object.keys(RequestType)
+        .filter(key => isNaN(Number(key))) // Ignore numeric keys
+        .map(key => ({ name: key, value: RequestType[key as keyof typeof RequestType] }));
+
+      async function addRequest() {
+        const request = await inquirer.prompt([
+          {
+            type: 'list',
+            name: 'request_type',
+            message: 'Select a request type',
+            choices: requestTypeChoices
+          },
+          {
+            type: 'input',
+            name: 'address',
+            message: 'Enter request address'
+          },
+          {
+            type: 'input',
+            name: 'amount',
+            message: 'Enter request amount'
+          }
+        ]);
+
+        requests.push(request);
+
+        const { addMore } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'addMore',
+            message: 'Do you want to add another request?',
+            default: true
+          }
+        ]);
+
+        if (addMore) await addRequest();
+      }
+
+      await addRequest();
+      return requests;
+    }
 
     try {
       const selectedPool = await selectPool(addressBook);
@@ -330,6 +375,224 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
         //   break;
         // }
 
+        case 'Submit To Pool': {
+          const { from, spender, to } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'from',
+              message: 'Enter from address:',
+              validate: (input) => input.trim() !== '' || 'From address cannot be empty'
+            },
+            {
+              type: 'number',
+              name: 'spender',
+              message: 'Enter spender address:',
+              validate: (input) => input.trim() !== '' || 'Spender address cannot be empty'
+            },
+            {
+              type: 'input',
+              name: 'to',
+              message: 'Enter to address:',
+              validate: (input) => input.trim() !== '' || 'To address cannot be empty'
+            }
+          ]);
+
+          const requests = await getRequestInput();
+
+          if (await confirmAction('Submit to pool?',
+            `Pool: ${selectedPool}\nFrom: ${from}\nSpender: ${spender}\nTo: ${to}\nRequests: ${requests}`)) {
+            await poolLogic.submitToPool(selectedPool, from, spender, to, requests, txParams);
+          }
+          break;
+        }
+
+        case 'Submit With Allowance': {
+          const { from, spender, to } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'from',
+              message: 'Enter from address:',
+              validate: (input) => input.trim() !== '' || 'From address cannot be empty'
+            },
+            {
+              type: 'number',
+              name: 'spender',
+              message: 'Enter spender address:',
+              validate: (input) => input.trim() !== '' || 'Spender address cannot be empty'
+            },
+            {
+              type: 'input',
+              name: 'to',
+              message: 'Enter to address:',
+              validate: (input) => input.trim() !== '' || 'To address cannot be empty'
+            }
+          ]);
+
+          const requests = await getRequestInput();
+
+          if (await confirmAction('Submit with allowance?',
+            `Pool: ${selectedPool}\nFrom: ${from}\nSpender: ${spender}\nTo: ${to}\nRequests: ${requests}`)) {
+            await poolLogic.submitWithAllowance(selectedPool, from, spender, to, requests, txParams);
+          }
+          break;
+        }
+
+        case 'Flash Loan': {
+          const { from, asset, amount } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'from',
+              message: 'Enter from address:',
+              validate: (input) => input.trim() !== '' || 'From address cannot be empty'
+            },
+            {
+              type: 'number',
+              name: 'asset',
+              message: 'Enter asset address:',
+              validate: (input) => input.trim() !== '' || 'Asset address cannot be empty'
+            },
+            {
+              type: 'string', name: 'amount', message: 'Enter amount:', validate: (input: string) => {
+                if (!/^\d+$/.test(input)) return 'Please enter a valid integer';
+                return true;
+              }
+            }
+          ]);
+
+
+          if (await confirmAction('Flash loan?',
+            `Pool: ${selectedPool}\nFrom: ${from}\nSpender: ${asset}\nTo: ${BigInt(amount)}`)) {
+            await poolLogic.flashLoan(selectedPool, from, asset, BigInt(amount), txParams);
+          }
+          break;
+        }
+
+        case 'Gulp': {
+          const { asset } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'asset',
+              message: 'Enter asset address:',
+              validate: (input) => input.trim() !== '' || 'Asset address cannot be empty'
+            }
+          ]);
+
+
+          if (await confirmAction('Do you want to guilp?',
+            `Pool: ${selectedPool}\nAsset: ${asset}`)) {
+            await poolLogic.gulp(selectedPool, asset, txParams);
+          }
+          break;
+        }
+
+        case 'New Auction': {
+          const { auction_type, user, bid, lot, percent } = await inquirer.prompt([
+            {
+              type: 'list',
+              name: 'auction_type',
+              message: 'Select a auction type',
+              choices: [
+                { name: 'Liquidation', value: AuctionType['Liquidation'] },
+                { name: 'BadDebt', value: AuctionType['BadDebt'] },
+                { name: 'Interest', value: AuctionType['BadDebt'] }
+              ]
+            },
+            {
+              type: 'input',
+              name: 'user',
+              message: 'Enter user address:',
+              validate: (input) => input.trim() !== '' || 'User address cannot be empty'
+            },
+            {
+              type: 'input',
+              name: 'bid',
+              message: 'Enter bids (comma-separated):',
+              filter: (input) => input.split(',').map((b: string) => b.trim()).filter((b: string) => b !== '') // Convert to array
+            },
+            {
+              type: 'input',
+              name: 'lot',
+              message: 'Enter lots (comma-separated):',
+              filter: (input) => input.split(',').map((b: string) => b.trim()).filter((b: string) => b !== '') // Convert to array
+            },
+            {
+              type: 'number',
+              name: 'percent',
+              message: 'Enter liquidation percentage (0-100):',
+              validate: (input) =>
+                (!isNaN(input) && input >= 0 && input <= 100) ||
+                'Please enter a valid percentage between 0 and 100'
+            }
+          ]);
+
+          if (await confirmAction('Create Auction?',
+            `Pool: ${selectedPool}\nAuctionType: ${auction_type}\nUser: ${user}\nPercentage: ${percent}%`)) {
+            await poolLogic.newAuction(selectedPool, auction_type, user, bid, lot, percent, txParams);
+          }
+          break;
+        }
+
+        case 'Get Config': {
+          if (await confirmAction('Get Config?', '')) {
+            const config = await poolLogic.getConfig(selectedPool, txParams);
+          }
+          break;
+        }
+
+        case 'Get Admin': {
+          if (await confirmAction('Get Admin?', '')) {
+            const result = await poolLogic.getAdmin(selectedPool, txParams);
+          }
+          break;
+        }
+
+        case 'Get Reserve': {
+          const { asset } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'asset',
+              message: 'Enter asset address',
+            }
+          ]);
+          if (await confirmAction('Get Reserve?', '')) {
+            const result = await poolLogic.getReserve(selectedPool, asset, txParams);
+          }
+          break;
+        }
+
+        case 'Get Reserve Emissions': {
+          const { reserve_token_id } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'reserve_token_id',
+              message: 'Enter reserve token id',
+            }
+          ]);
+          if (await confirmAction('Get Reserve Emissions?', '')) {
+            const result = await poolLogic.getReserveEmissions(selectedPool, reserve_token_id, txParams);
+          }
+          break;
+        }
+
+        case 'Get User Emissions': {
+          const { user, reserve_token_id } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'user',
+              message: 'Enter user address',
+            },
+            {
+              type: 'input',
+              name: 'reserve_token_id',
+              message: 'Enter reserve token id'
+            }
+          ]);
+          if (await confirmAction('Get Reserve Emissions?', '')) {
+            const result = await poolLogic.getUserEmissions(selectedPool, user, reserve_token_id, txParams);
+          }
+          break;
+        }
+
         case 'Backstop Deposit': {
           const { amount } = await inquirer.prompt([{
             type: 'number',
@@ -343,6 +606,13 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
           if (await confirmAction('Backstop Deposit?',
             `Pool: ${selectedPool}\nAmount: ${amount}`)) {
             await poolLogic.backstopDeposit(addressBook.getContract("backstop"), selectedPool, amount, txParams);
+          }
+          break;
+        }
+
+        case 'Get Market': {
+          if (await confirmAction('Get Market?', '')) {
+            const result = await poolLogic.getMarket(selectedPool, txParams);
           }
           break;
         }
