@@ -7,7 +7,7 @@ import { AdminContract } from "../external/admin.js";
 import { TreasuryContract } from "../external/treasury.js";
 import { BridgeOracleContract } from "../external/bridgeOracle.js";
 import { PegkeeperContract } from "../external/pegkeeper.js";
-import { PoolFactoryContract } from "@blend-capital/blend-sdk";
+import { PoolFactoryContractV2 } from "@blend-capital/blend-sdk";
 import { randomBytes } from "crypto";
 import { bumpContractInstance } from "../utils/contract.js";
 import { Asset, OracleContract } from "../external/oracle.js";
@@ -86,7 +86,7 @@ export async function initOrbit(addressBook: AddressBook, txParams: TxParams) {
 export async function deployPool(addressBook: AddressBook, name: string, backstop_take_rate: number, max_positions: number, txParams: TxParams) {
   console.log('Deploying pool...');
 
-  const poolFactory = new PoolFactoryContract(addressBook.getContract('poolFactory'));
+  const poolFactory = new PoolFactoryContractV2(addressBook.getContract('poolFactory'));
 
   const poolSalt = randomBytes(32);
   const deployPoolArgs = {
@@ -99,8 +99,8 @@ export async function deployPool(addressBook: AddressBook, name: string, backsto
   };
 
   const poolAddress = await invokeSorobanOperation(
-    poolFactory.deploy(deployPoolArgs),
-    PoolFactoryContract.parsers.deploy,
+    poolFactory.deployPool(deployPoolArgs),
+    PoolFactoryContractV2.parsers.deployPool,
     txParams
   );
   if (!poolAddress) {

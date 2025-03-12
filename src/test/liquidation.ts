@@ -6,8 +6,8 @@ import { signWithKeypair } from '../utils/tx.js';
 import { mintToken, setTrustlineToken } from '../logic/tokenLogic.js';
 import { airdropAccount } from '../utils/contract.js';
 import { setPriceStable } from '../logic/oracleLogic.js';
-import { Request, RequestType } from '@blend-capital/blend-sdk';
-import { newLiquidationAuction, submitToPool } from '../logic/poolLogic.js';
+import { AuctionType, Request, RequestType } from '@blend-capital/blend-sdk';
+import { newAuction, submitToPool } from '../logic/poolLogic.js';
 import { keepPeg } from '../logic/treasuryLogic.js';
 import { SCALAR_7, selectNetwork } from '../utils/utils.js';
 
@@ -97,7 +97,8 @@ async function main() {
     await waitFor(5);
 
     // Liquidate user 2
-    await newLiquidationAuction(pool, pair.publicKey(), 100, txParamsUser2);
+    await newAuction(pool, 0, pair.publicKey(), [], [], 100, txParamsUser2);
+    // await newLiquidationAuction(pool, pair.publicKey(), 100, txParamsUser2);
 
     await waitFor(1300); //TODO: Wait for 250 blocks to pass so 250x5 = 1250 seconds
 
