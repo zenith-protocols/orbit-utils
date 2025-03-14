@@ -4,29 +4,29 @@ import { invokeSorobanOperation, TxParams } from '../utils/tx.js';
 import { nativeToScVal } from "@stellar/stellar-sdk";
 import { SCALAR_7 } from "../utils/utils.js";
 
-export async function initialize(
-    contract: string,
-    admin: string,
-    pegkeeper: string,
-    txParams: TxParams
-) {
-    console.log('Initializing treasury...');
-    const treasury = new TreasuryContract(contract);
-    try {
-        await invokeSorobanOperation(
-            treasury.initialize({
-                admin: Address.fromString(admin),
-                pegkeeper: Address.fromString(pegkeeper)
-            }),
-            TreasuryContract.parsers.initialize,
-            txParams
-        );
-        console.log(`Successfully initialized treasury.\n`);
-    } catch (e) {
-        console.log('Failed to initialize treasury', e);
-        throw e;
-    }
-}
+// export async function initialize(
+//     contract: string,
+//     admin: string,
+//     pegkeeper: string,
+//     txParams: TxParams
+// ) {
+//     console.log('Initializing treasury...');
+//     const treasury = new TreasuryContract(contract);
+//     try {
+//         await invokeSorobanOperation(
+//             treasury.initialize({
+//                 admin: Address.fromString(admin),
+//                 pegkeeper: Address.fromString(pegkeeper)
+//             }),
+//             TreasuryContract.parsers.initialize,
+//             txParams
+//         );
+//         console.log(`Successfully initialized treasury.\n`);
+//     } catch (e) {
+//         console.log('Failed to initialize treasury', e);
+//         throw e;
+//     }
+// }
 
 export async function addStablecoin(
     contract: string,
@@ -96,6 +96,32 @@ export async function decreaseSupply(
         console.log(`Successfully decreased supply.\n`);
     } catch (e) {
         console.log('Failed to decrease supply', e);
+        throw e;
+    }
+}
+
+export async function claimInterest(
+    contract: string,
+    pool: string,
+    reserve_tokens_id: Array<number>,
+    to: string,
+    txParams: TxParams
+) {
+    console.log('Claiming interest...');
+    const treasury = new TreasuryContract(contract);
+    try {
+        await invokeSorobanOperation(
+            treasury.claimInterest({
+                pool,
+                reserve_tokens_id,
+                to
+            }),
+            TreasuryContract.parsers.claimInterest,
+            txParams
+        );
+        console.log(`Successfully claimed interest.\n`);
+    } catch (e) {
+        console.log('Failed to claim interest', e);
         throw e;
     }
 }

@@ -17,10 +17,10 @@ export type Asset =
   | { tag: 'Other'; values: readonly [string] };
 
 
-export interface BridgeOracleInitArgs {
-  admin: Address | string;
-  oracle: Address | string;
-}
+// export interface BridgeOracleInitArgs {
+//   admin: Address | string;
+//   oracle: Address | string;
+// }
 
 export interface BridgeOracleAddAssetArgs {
   asset: Asset;
@@ -42,7 +42,7 @@ export class BridgeOracleContract extends Contract {
   ]);
 
   static readonly parsers = {
-    initialize: () => { },
+    // initialize: () => { },
     addAsset: () => { },
     setOracle: () => { },
     decimals: (result: string): u32 =>
@@ -52,12 +52,12 @@ export class BridgeOracleContract extends Contract {
     upgrade: () => { },
   };
 
-  initialize(contractArgs: BridgeOracleInitArgs): string {
-    return this.call(
-      'initialize',
-      ...BridgeOracleContract.spec.funcArgsToScVals('initialize', contractArgs)
-    ).toXDR('base64');
-  }
+  // initialize(contractArgs: BridgeOracleInitArgs): string {
+  //   return this.call(
+  //     'initialize',
+  //     ...BridgeOracleContract.spec.funcArgsToScVals('initialize', contractArgs)
+  //   ).toXDR('base64');
+  // }
 
   addAsset(contractArgs: BridgeOracleAddAssetArgs): string {
     return this.call(

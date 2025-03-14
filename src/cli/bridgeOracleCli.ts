@@ -7,7 +7,7 @@ import * as bridgeOracleLogic from '../logic/bridgeOracleLogic.js';
 
 async function handleBridgeOracle(addressBook: AddressBook, txParams: TxParams) {
     const oracleOptions = [
-        'Initialize',
+        // 'Initialize',
         'Add Asset',
         'Set Oracle',
         'Get Decimals',
@@ -31,16 +31,16 @@ async function handleBridgeOracle(addressBook: AddressBook, txParams: TxParams) 
             const contract = addressBook.getContract('bridgeOracle');
 
             switch (action) {
-                case 'Initialize': {
-                    const admin = await selectToken(addressBook, 'Select admin address:');
-                    const oracle = await selectToken(addressBook, 'Select oracle address:');
+                // case 'Initialize': {
+                //     const admin = await selectToken(addressBook, 'Select admin address:');
+                //     const oracle = await selectToken(addressBook, 'Select oracle address:');
 
-                    if (await confirmAction('Initialize Bridge Oracle?',
-                        `Admin: ${admin}\nOracle: ${oracle}`)) {
-                        await bridgeOracleLogic.initialize(contract, admin, oracle, txParams);
-                    }
-                    break;
-                }
+                //     if (await confirmAction('Initialize Bridge Oracle?',
+                //         `Admin: ${admin}\nOracle: ${oracle}`)) {
+                //         await bridgeOracleLogic.initialize(contract, admin, oracle, txParams);
+                //     }
+                //     break;
+                // }
 
                 case 'Add Asset': {
                     console.log('\nSetup source asset:');

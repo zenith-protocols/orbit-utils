@@ -2,29 +2,29 @@ import { Address } from '@stellar/stellar-sdk';
 import { BridgeOracleContract, Asset } from '../external/bridgeOracle.js';
 import { invokeSorobanOperation, TxParams } from '../utils/tx.js';
 
-export async function initialize(
-    contract: string,
-    admin: string,
-    oracle: string,
-    txParams: TxParams
-) {
-    console.log('Initializing bridge oracle...');
-    const bridgeOracle = new BridgeOracleContract(contract);
-    try {
-        await invokeSorobanOperation(
-            bridgeOracle.initialize({
-                admin: Address.fromString(admin),
-                oracle: Address.fromString(oracle)
-            }),
-            BridgeOracleContract.parsers.initialize,
-            txParams
-        );
-        console.log(`Successfully initialized bridge oracle.\n`);
-    } catch (e) {
-        console.log('Failed to initialize bridge oracle', e);
-        throw e;
-    }
-}
+// export async function initialize(
+//     contract: string,
+//     admin: string,
+//     oracle: string,
+//     txParams: TxParams
+// ) {
+//     console.log('Initializing bridge oracle...');
+//     const bridgeOracle = new BridgeOracleContract(contract);
+//     try {
+//         await invokeSorobanOperation(
+//             bridgeOracle.initialize({
+//                 admin: Address.fromString(admin),
+//                 oracle: Address.fromString(oracle)
+//             }),
+//             BridgeOracleContract.parsers.initialize,
+//             txParams
+//         );
+//         console.log(`Successfully initialized bridge oracle.\n`);
+//     } catch (e) {
+//         console.log('Failed to initialize bridge oracle', e);
+//         throw e;
+//     }
+// }
 
 export async function addAsset(
     contract: string,

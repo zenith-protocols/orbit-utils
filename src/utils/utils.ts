@@ -1,6 +1,6 @@
 import inquirer from "inquirer";
 import { AddressBook } from "./address-book.js";
-import { Asset } from "../external/admin.js";
+import { Asset } from "../external/dao.js";
 import { Address } from "@stellar/stellar-sdk";
 
 export const SCALAR_7 = 1e7;

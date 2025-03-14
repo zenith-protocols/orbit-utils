@@ -6,10 +6,11 @@ import * as treasuryLogic from '../logic/treasuryLogic.js';
 
 async function handleTreasury(addressBook: AddressBook, txParams: TxParams) {
     const treasuryOptions = [
-        'Initialize',
+        // 'Initialize',
         'Add Stablecoin',
         'Increase Supply',
         'Decrease Supply',
+        'Claim Interest',
         'Keep Peg',
         'Set Pegkeeper',
         'Upgrade'
@@ -31,16 +32,16 @@ async function handleTreasury(addressBook: AddressBook, txParams: TxParams) {
             const contract = addressBook.getContract('treasury');
 
             switch (action) {
-                case 'Initialize': {
-                    const admin = await selectToken(addressBook, 'Select admin address:');
-                    const pegkeeper = await selectToken(addressBook, 'Select pegkeeper address:');
+                // case 'Initialize': {
+                //     const admin = await selectToken(addressBook, 'Select admin address:');
+                //     const pegkeeper = await selectToken(addressBook, 'Select pegkeeper address:');
 
-                    if (await confirmAction('Initialize Treasury?',
-                        `Admin: ${admin}\nPegkeeper: ${pegkeeper}`)) {
-                        await treasuryLogic.initialize(contract, admin, pegkeeper, txParams);
-                    }
-                    break;
-                }
+                //     if (await confirmAction('Initialize Treasury?',
+                //         `Admin: ${admin}\nPegkeeper: ${pegkeeper}`)) {
+                //         await treasuryLogic.initialize(contract, admin, pegkeeper, txParams);
+                //     }
+                //     break;
+                // }
 
                 case 'Add Stablecoin': {
                     const token = await selectToken(addressBook, 'Select stablecoin token:');
@@ -85,6 +86,35 @@ async function handleTreasury(addressBook: AddressBook, txParams: TxParams) {
                     break;
                 }
 
+                case 'Claim Interest': {
+                    const { pool, reserve_tokens_id, to } = await inquirer.prompt([
+                        {
+                            type: 'input',
+                            name: 'pool',
+                            message: 'Enter Pool address:',
+                            validate: (input: string) => input.trim() !== '' || 'Pool address cannot be empty'
+                        },
+                        {
+                            type: 'input',
+                            name: 'reserve_tokens_id',
+                            message: 'Enter Reserve Tokens ID (comma-separated):',
+                            filter: (input: string) => input.split(',').map((b: string) => b.trim()).filter((b: string) => b !== '').map((c: string) => parseInt(c)) // Convert to array
+                        },
+                        {
+                            type: 'input',
+                            name: 'to',
+                            message: 'Enter To address:',
+                            validate: (input: string) => input.trim() !== '' || 'To address cannot be empty'
+                        },
+                    ]);
+
+                    if (await confirmAction('Claim Interest?',
+                        `Pool: ${pool}\nReserve Tokens ID: ${reserve_tokens_id.toString()}\nTo: ${to}`)) {
+                        await treasuryLogic.claimInterest(contract, pool, reserve_tokens_id, to, txParams);
+                    }
+                    break;
+                }
+
                 case 'Keep Peg': {
                     const token = await selectToken(addressBook, 'Select token:');
                     const { amount } = await inquirer.prompt([{
@@ -118,14 +148,14 @@ async function handleTreasury(addressBook: AddressBook, txParams: TxParams) {
 
                     if (await confirmAction('Keep Peg?',
                         `Token: ${token}
-Amount: ${amount}
-Blend Pool: ${blendPool}
-Auction: ${auction}
-Collateral Token: ${collateralToken}
-Lot Amount: ${lotAmount}
-Liquidation Amount: ${liqAmount}
-AMM: ${amm}
-Fee Taker: ${feeTaker}`)) {
+                        Amount: ${amount}
+                        Blend Pool: ${blendPool}
+                        Auction: ${auction}
+                        Collateral Token: ${collateralToken}
+                        Lot Amount: ${lotAmount}
+                        Liquidation Amount: ${liqAmount}
+                        AMM: ${amm}
+                        Fee Taker: ${feeTaker}`)) {
                         await treasuryLogic.keepPeg(
                             contract, token, amount, blendPool, auction,
                             collateralToken, lotAmount, liqAmount, amm, feeTaker,

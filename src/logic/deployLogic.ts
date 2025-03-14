@@ -3,7 +3,7 @@ import { AddressBook } from "../utils/address-book.js";
 import { deployStellarAsset } from "../utils/stellar-asset.js";
 import { invokeSorobanOperation, TxParams } from "../utils/tx.js";
 import { config } from "../utils/env_config.js";
-import { AdminContract } from "../external/admin.js";
+import { DaoContract } from "../external/dao.js";
 import { TreasuryContract } from "../external/treasury.js";
 import { BridgeOracleContract } from "../external/bridgeOracle.js";
 import { PegkeeperContract } from "../external/pegkeeper.js";
@@ -15,8 +15,8 @@ import { SCALAR_7 } from "../utils/utils.js";
 
 export async function initOrbit(addressBook: AddressBook, txParams: TxParams) {
   console.log('Initializing Orbit...');
-  const adminId = addressBook.getContract('admin');
-  const adminContract = new AdminContract(adminId);
+  const daoId = addressBook.getContract('admin');
+  const daoContract = new DaoContract(daoId);
   const treasuryId = addressBook.getContract('treasury');
   const treasuryContract = new TreasuryContract(treasuryId);
   const bridgeOracleId = addressBook.getContract('bridgeOracle');
@@ -28,59 +28,56 @@ export async function initOrbit(addressBook: AddressBook, txParams: TxParams) {
 
   try {
     await invokeSorobanOperation(
-      treasuryContract.initialize({
-        admin: adminId,
-        pegkeeper: pegkeeperId,
-      }),
-      TreasuryContract.parsers.initialize,
+      treasuryContract.setPegkeeper(pegkeeperId),
+      TreasuryContract.parsers.setPegkeeper,
       txParams
     );
-    console.log('Successfully initialized Treasury.\n');
+    console.log('Successfully Setted Pegkeer address on Treasury.\n');
   } catch (e) {
-    console.log('Failed to initialize Treasury', e);
+    console.log('Failed to Set Pegkeeper address', e);
   }
 
-  try {
-    await invokeSorobanOperation(
-      bridgeOracleContract.initialize({
-        admin: adminId,
-        oracle: oracle,
-      }),
-      BridgeOracleContract.parsers.initialize,
-      txParams
-    );
-    console.log('Successfully initialized Bridge Oracle.\n');
-  } catch (e) {
-    console.log('Failed to initialize Bridge Oracle', e);
-  }
+  // try {
+  //   await invokeSorobanOperation(
+  //     bridgeOracleContract.initialize({
+  //       admin: daoId,
+  //       oracle: oracle,
+  //     }),
+  //     BridgeOracleContract.parsers.initialize,
+  //     txParams
+  //   );
+  //   console.log('Successfully initialized Bridge Oracle.\n');
+  // } catch (e) {
+  //   console.log('Failed to initialize Bridge Oracle', e);
+  // }
 
-  try {
-    await invokeSorobanOperation(
-      pegkeeperContract.initialize({
-        admin: treasuryId,
-        router: router,
-      }),
-      PegkeeperContract.parsers.initialize,
-      txParams
-    );
-    console.log('Successfully initialized Pegkeeper.\n');
-  } catch (e) {
-    console.log('Failed to initialize Pegkeeper', e);
-  }
-  try {
-    await invokeSorobanOperation(
-      adminContract.initialize({
-        admin: config.admin.publicKey(),
-        treasury: treasuryId,
-        bridge_oracle: bridgeOracleId,
-      }),
-      AdminContract.parsers.initialize,
-      txParams
-    );
-    console.log('Successfully initialized Admin Contract.\n');
-  } catch (e) {
-    console.log('Failed to initialize Admin Contract', e);
-  }
+  // try {
+  //   await invokeSorobanOperation(
+  //     pegkeeperContract.initialize({
+  //       admin: treasuryId,
+  //       router: router,
+  //     }),
+  //     PegkeeperContract.parsers.initialize,
+  //     txParams
+  //   );
+  //   console.log('Successfully initialized Pegkeeper.\n');
+  // } catch (e) {
+  //   console.log('Failed to initialize Pegkeeper', e);
+  // }
+  // try {
+  //   await invokeSorobanOperation(
+  //     daoContract.initialize({
+  //       admin: config.admin.publicKey(),
+  //       treasury: treasuryId,
+  //       bridge_oracle: bridgeOracleId,
+  //     }),
+  //     DaoContract.parsers.initialize,
+  //     txParams
+  //   );
+  //   console.log('Successfully initialized Admin Contract.\n');
+  // } catch (e) {
+  //   console.log('Failed to initialize Admin Contract', e);
+  // }
 }
 
 export async function deployPool(addressBook: AddressBook, name: string, backstop_take_rate: number, max_positions: number, txParams: TxParams) {

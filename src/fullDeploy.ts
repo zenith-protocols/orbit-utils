@@ -12,7 +12,7 @@ import { deployTokenContract } from './logic/tokenLogic.js';
 import { backstopDeposit, queueSetReserve, setEmissionsConfig, setReserve, setStatus } from './logic/poolLogic.js';
 import { confirmAction, selectNetwork } from './utils/utils.js';
 import { addLiquidity } from './logic/routerLogic.js';
-import { newStablecoinAdmin } from './logic/adminLogic.js';
+import { newStablecoinDao } from './logic/daoLogic.js';
 
 async function main() {
     const network = await selectNetwork();
@@ -32,7 +32,8 @@ async function main() {
     const bridgeOracle = addressBook.getContract('bridgeOracle');
     const treasury = addressBook.getContract('treasury');
     const router = addressBook.getContract('router');
-    const admin = addressBook.getContract('admin');
+    const dao = addressBook.getContract('dao');
+    const governor = addressBook.getContract('governor');
 
     // Init Orbit and create tokens
     const collateralName = "XLM";
@@ -129,7 +130,7 @@ async function main() {
         await backstopDeposit(addressBook.getContract("backstop"), poolId, 50000, txParamsAdmin);
         await setStatus(poolId, 0, txParamsAdmin);
 
-        await newStablecoinAdmin(admin, stableId, base, poolId, 1000000, txParamsAdmin);
+        await newStablecoinDao(dao, governor, treasury, oracle, stableId, base, poolId, 1000000, txParamsAdmin);
     }
 }
 

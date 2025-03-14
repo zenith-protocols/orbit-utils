@@ -21,6 +21,12 @@ export interface TreasuryDecreaseSupplyArgs {
   amount: i128,
 }
 
+export interface TreasuryClaimInterestArgs {
+  pool: Address | string,
+  reserve_tokens_id: Array<number>,
+  to: Address | string,
+}
+
 export interface TreasuryKeepPegArgs {
   name: string,
   args: Array<any>
@@ -40,21 +46,22 @@ export class TreasuryContract extends Contract {
   ]);
 
   static readonly parsers = {
-    initialize: () => { },
+    // initialize: () => { },
     addStablecoin: () => { },
     increaseSupply: () => { },
     decreaseSupply: () => { },
+    claimInterest: () => { },
     keepPeg: () => { },
     setPegkeeper: () => { },
     upgrade: () => { },
   };
 
-  initialize(contractArgs: TreasuryInitArgs): string {
-    return this.call(
-      'initialize',
-      ...TreasuryContract.spec.funcArgsToScVals('initialize', contractArgs)
-    ).toXDR('base64');
-  }
+  // initialize(contractArgs: TreasuryInitArgs): string {
+  //   return this.call(
+  //     'initialize',
+  //     ...TreasuryContract.spec.funcArgsToScVals('initialize', contractArgs)
+  //   ).toXDR('base64');
+  // }
 
   addStablecoin(contractArgs: TreasuryAddStablecoinArgs): string {
     return this.call(
@@ -74,6 +81,13 @@ export class TreasuryContract extends Contract {
     return this.call(
       'decrease_supply',
       ...TreasuryContract.spec.funcArgsToScVals('decrease_supply', contractArgs)
+    ).toXDR('base64');
+  }
+
+  claimInterest(contractArgs: TreasuryClaimInterestArgs): string {
+    return this.call(
+      'claim_interest',
+      ...TreasuryContract.spec.funcArgsToScVals('claim_interest', contractArgs)
     ).toXDR('base64');
   }
 

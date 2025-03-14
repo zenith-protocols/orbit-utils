@@ -14,14 +14,14 @@ export class PegkeeperContract extends Contract {
     "AAAABAAAAAAAAAAAAAAADlBlZ2tlZXBlckVycm9yAAAAAAACAAAAAAAAABdBbHJlYWR5SW5pdGlhbGl6ZWRFcnJvcgAAAAH1AAAAAAAAAA1Ob3RQcm9maXRhYmxlAAAAAAAB+Q=="
   ]);
 
-  static readonly parsers = {
-    initialize: () => { },
-  };
+  // static readonly parsers = {
+  //   initialize: () => { },
+  // };
 
-  initialize(contractArgs: pegkeeperInitArgs): string {
-    return this.call(
-      'initialize',
-      ...PegkeeperContract.spec.funcArgsToScVals('initialize', contractArgs)
-    ).toXDR('base64');
-  }
+  // initialize(contractArgs: pegkeeperInitArgs): string {
+  //   return this.call(
+  //     'initialize',
+  //     ...PegkeeperContract.spec.funcArgsToScVals('initialize', contractArgs)
+  //   ).toXDR('base64');
+  // }
 }

@@ -4,7 +4,7 @@ import { AddressBook } from './utils/address-book.js';
 import { config } from './utils/env_config.js';
 import { signWithKeypair, TxParams } from './utils/tx.js';
 import { initOrbit, deployPool } from './logic/deployLogic.js';
-import handleAdmin from './cli/adminCli.js';
+import handleDao from './cli/daoCli.js';
 import handlePool from './cli/poolCli.js';
 import handleToken from './cli/tokenCli.js';
 import handleOracle from './cli/oracleCli.js';
@@ -38,7 +38,7 @@ async function handleOrbitActions(addressBook: AddressBook, txParams: TxParams) 
     try {
       switch (action) {
         case 'Admin': {
-          await handleAdmin(addressBook, txParams);
+          await handleDao(addressBook, txParams);
           break;
         }
         case 'Treasury': {
