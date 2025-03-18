@@ -16,7 +16,7 @@ import handleGovernor from './cli/governorCli.js';
 
 async function handleOrbitActions(addressBook: AddressBook, txParams: TxParams) {
   const orbitOptions = [
-    'Admin',
+    'Dao Utils',
     'Treasury',
     'Bridge Oracle',
     'Soroban Governor',
@@ -37,7 +37,7 @@ async function handleOrbitActions(addressBook: AddressBook, txParams: TxParams) 
 
     try {
       switch (action) {
-        case 'Admin': {
+        case 'Dao Utils': {
           await handleDao(addressBook, txParams);
           break;
         }

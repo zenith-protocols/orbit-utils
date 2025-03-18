@@ -102,7 +102,7 @@ export async function getPastVotes(
   console.log(`Getting past votes...`)
   const bondingVotesContract = new BondingVotesContract(contract)
   try {
-    const pastVotes = invokeSorobanOperation(
+    const pastVotes = await invokeSorobanOperation(
       bondingVotesContract.getPastVotes({user, sequence}),
       VotesContract.votes_parsers.getPastVotes,
       txParams
@@ -126,7 +126,7 @@ export async function getDelegate(
   console.log(`Getting delegate...`)
   const bondingVotesContract = new BondingVotesContract(contract)
   try {
-    const delegate = invokeSorobanOperation(
+    const delegate = await invokeSorobanOperation(
       bondingVotesContract.getDelegate({account}),
       VotesContract.votes_parsers.getDelegate,
       txParams

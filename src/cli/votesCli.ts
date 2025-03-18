@@ -6,12 +6,12 @@ import { confirmAction } from "../utils/utils.js";
 
 async function handleVotes(addressBook: AddressBook, txParams: TxParams) {
   const voteOptions = [
-    'Total supply',
+    'Total Supply',
     'Set Vote Sequence',
     'Get Past Total Supply',
-    'Get votes',
+    'Get Votes',
     'Get Past Votes',
-    'Get delegate',
+    'Get Delegate',
     'Delegate',
     'Initialize',
     'Deposit',
@@ -41,7 +41,7 @@ async function handleVotes(addressBook: AddressBook, txParams: TxParams) {
       const contract = addressBook.getContract('vote')
 
       switch (action) {
-        case 'Total supply': {
+        case 'Total Supply': {
           if (await confirmAction('Get Total Supply?', '')) {
             await votesLogic.getTotalSupply(contract, txParams)
           }
@@ -74,7 +74,7 @@ async function handleVotes(addressBook: AddressBook, txParams: TxParams) {
           break;
         }
 
-        case 'Get votes': {
+        case 'Get Votes': {
           const { account } = await inquirer.prompt([
             {
               type: 'string',
@@ -92,12 +92,12 @@ async function handleVotes(addressBook: AddressBook, txParams: TxParams) {
             {
               type: 'string',
               name: 'user',
-              message: 'Enter user',
+              message: 'Enter user:',
             },
             {
               type: 'number',
               name: 'sequence',
-              message: 'Enter sequence',
+              message: 'Enter sequence:',
             }
           ])
 
@@ -105,7 +105,7 @@ async function handleVotes(addressBook: AddressBook, txParams: TxParams) {
           break;
         }
 
-        case 'Get delegate': {
+        case 'Get Delegate': {
           const { account } = await inquirer.prompt([
             {
               type: 'string',
