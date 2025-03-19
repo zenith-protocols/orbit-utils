@@ -1,5 +1,5 @@
 import { Spec as ContractSpec, Option, i128, u32, u64 } from '@stellar/stellar-sdk/contract';
-import { VotesContract, BondingVotesContract } from "../external/votes.js";
+import { BondingVotesContract } from "../external/votes.js";
 import { invokeSorobanOperation, TxParams } from "../utils/tx.js";
 
 export async function getTotalSupply(
@@ -11,7 +11,7 @@ export async function getTotalSupply(
   try {
     const totalSupply = await invokeSorobanOperation(
       bondingVotesContract.totalSupply(),
-      VotesContract.votes_parsers.totalSupply,
+      BondingVotesContract.votes_parsers.totalSupply,
       txParams
     );
     console.log(`Successfully got total supply: ${totalSupply}\n`)
@@ -35,10 +35,10 @@ export async function setVoteSequence(
   try {
     await invokeSorobanOperation(
       bondingVotesContract.setVoteSequence({ sequence }),
-      VotesContract.votes_parsers.setVoteSequence,
+      BondingVotesContract.votes_parsers.setVoteSequence,
       txParams
     )
-    console.log(`Vote sequence setted successfully.`)
+    console.log(`Vote sequence set successfully.`)
   } catch (e) {
     console.log('Failed to set vote sequence', e)
     throw e
@@ -55,7 +55,8 @@ export async function getPastTotalSupply(
   try {
     const pastTotalSupply = await invokeSorobanOperation(
       bondingVotesContract.getPastTotalSupply({sequence}),
-      VotesContract.votes_parsers.getPastTotalSupply,
+
+      BondingVotesContract.votes_parsers.getPastTotalSupply,
       txParams
     )
     console.log(`Successfully got past total supply: ${pastTotalSupply}\n`)
@@ -79,7 +80,7 @@ export async function getVotes(
   try {
     const votes = await invokeSorobanOperation(
       bondingVotesContract.getVotes({account}),
-      VotesContract.votes_parsers.getVotes,
+      BondingVotesContract.votes_parsers.getVotes,
       txParams
     )
     console.log(`Successfully got votes: ${votes}\n`)
@@ -104,7 +105,7 @@ export async function getPastVotes(
   try {
     const pastVotes = await invokeSorobanOperation(
       bondingVotesContract.getPastVotes({user, sequence}),
-      VotesContract.votes_parsers.getPastVotes,
+      BondingVotesContract.votes_parsers.getPastVotes,
       txParams
     )
     console.log(`Successfully got past votes: ${pastVotes}\n`)
@@ -128,7 +129,7 @@ export async function getDelegate(
   try {
     const delegate = await invokeSorobanOperation(
       bondingVotesContract.getDelegate({account}),
-      VotesContract.votes_parsers.getDelegate,
+      BondingVotesContract.votes_parsers.getDelegate,
       txParams
     )
     console.log(`Successfully got delegate: ${delegate}\n`)
@@ -153,7 +154,7 @@ export async function delegate(
   try {
     await invokeSorobanOperation(
       bondingVotesContract.delegate({account, delegatee}),
-      VotesContract.votes_parsers.delegate,
+      BondingVotesContract.votes_parsers.delegate,
       txParams
     )
     console.log('Successfully delegated.')
@@ -266,7 +267,7 @@ export async function setEmis(
       BondingVotesContract.parsers.setEmis,
       txParams
     )
-    console.log('Successfully setted emis.')
+    console.log('Successfully set emis.')
   } catch(e) {
     console.log('Failed to set Emis')
   }

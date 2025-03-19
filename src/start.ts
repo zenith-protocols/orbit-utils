@@ -10,17 +10,21 @@ import handleToken from './cli/tokenCli.js';
 import handleOracle from './cli/oracleCli.js';
 import handleTreasury from './cli/treasuryCli.js';
 import handleBridgeOracle from './cli/bridgeOracleCli.js';
-import handleVotes from './cli/votesCli.js';
-import { confirmAction, selectNetwork } from './utils/utils.js';
 import handleGovernor from './cli/governorCli.js';
+import handleAdminVotes from './cli/adminVotesCli.js';
+import handleBondingVotes from './cli/bondingVotesCli.js';
+import handleTokenVotes from './cli/tokenVotesCli.js';
+import { confirmAction, selectNetwork } from './utils/utils.js';
 
 async function handleOrbitActions(addressBook: AddressBook, txParams: TxParams) {
   const orbitOptions = [
     'Dao Utils',
     'Treasury',
     'Bridge Oracle',
+    'Admin Votes',
     'Soroban Governor',
-    'Bonding Votes'
+    'Bonding Votes',
+    'Token Votes'
   ];
 
   while (true) {
@@ -49,12 +53,20 @@ async function handleOrbitActions(addressBook: AddressBook, txParams: TxParams) 
           await handleBridgeOracle(addressBook, txParams);
           break;
         }
+        case 'Admin Votes': {
+          await handleAdminVotes(addressBook, txParams);
+          break;
+        }
         case 'Soroban Governor': {
           await handleGovernor(addressBook, txParams);
           break;
         }
         case 'Bonding Votes': {
-          await handleVotes(addressBook, txParams);
+          await handleBondingVotes(addressBook, txParams);
+          break;
+        }
+        case 'Token Votes': {
+          await handleTokenVotes(addressBook, txParams);
           break;
         }
       }

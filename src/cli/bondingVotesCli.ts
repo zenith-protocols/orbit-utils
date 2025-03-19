@@ -1,11 +1,11 @@
 import inquirer from "inquirer";
-import * as votesLogic from '../logic/votesLogic.js'
+import * as votesLogic from '../logic/bondingVotesLogic.js'
 import { AddressBook } from "../utils/address-book.js";
 import { TxParams } from "../utils/tx.js";
 import { confirmAction } from "../utils/utils.js";
 
-async function handleVotes(addressBook: AddressBook, txParams: TxParams) {
-  const voteOptions = [
+async function handleBondingVotes(addressBook: AddressBook, txParams: TxParams) {
+  const bondingVoteOptions = [
     'Total Supply',
     'Set Vote Sequence',
     'Get Past Total Supply',
@@ -31,14 +31,14 @@ async function handleVotes(addressBook: AddressBook, txParams: TxParams) {
         type: 'list',
         name: 'action',
         message: 'Select a governor action:',
-        choices: [...voteOptions, 'Back'],
+        choices: [...bondingVoteOptions, 'Back'],
       },
     ]);
 
     if (action === 'Back') break;
 
     try {
-      const contract = addressBook.getContract('vote')
+      const contract = addressBook.getContract('bondingVotes')
 
       switch (action) {
         case 'Total Supply': {
@@ -257,4 +257,4 @@ async function handleVotes(addressBook: AddressBook, txParams: TxParams) {
 
 }
 
-export default handleVotes
+export default handleBondingVotes
