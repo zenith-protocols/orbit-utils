@@ -9,17 +9,20 @@ export class AddressBook {
   private tokens: Map<string, string>;
   private contracts: Map<string, string>;
   private pools: Map<string, string>;
+  private hashes: Map<string, string>;
   private fileName: string;
 
   constructor(
     tokens: Map<string, string>,
     contracts: Map<string, string>,
     pools: Map<string, string>,
-    fileName: string
+    hashes: Map<string, string>,
+    fileName: string,
   ) {
     this.tokens = tokens;
     this.contracts = contracts;
     this.pools = pools;
+    this.hashes = hashes;
     this.fileName = fileName;
   }
 
@@ -34,15 +37,18 @@ export class AddressBook {
     try {
       const contractFile = readFileSync(path.join(__dirname, fileName));
       const contractObj = JSON.parse(contractFile.toString());
+
+      // console.log('*****', contractObj.contracts, Object.entries(contractObj.contracts))
       return new AddressBook(
-        new Map(Object.entries(contractObj.tokens)),
-        new Map(Object.entries(contractObj.contracts)),
+        new Map(Object.entries(contractObj.tokens || {})),
+        new Map(Object.entries(contractObj.contracts || {})),
         new Map(Object.entries(contractObj.pools || {})), // Default to empty object if pools not present
-        fileName
+        new Map(Object.entries(contractObj.hashes || {})),
+        fileName,
       );
     } catch {
       // unable to load file, it likely doesn't exist
-      return new AddressBook(new Map(), new Map(), new Map(), fileName);
+      return new AddressBook(new Map(), new Map(), new Map(), new Map(), fileName);
     }
   }
 
@@ -62,7 +68,34 @@ export class AddressBook {
       2
     );
     writeFileSync(path.join(__dirname, this.fileName), newFile);
+    // try {
+    //   const filePath = path.join(__dirname, this.fileName);
+    //   const existingData = JSON.parse(readFileSync(filePath, "utf8"));
+  
+    //   // Convert Maps to plain objects
+    //   const updatedData = {
+    //     tokens: Object.fromEntries(this.tokens),
+    //     contracts: Object.fromEntries(this.contracts),
+    //     pools: Object.fromEntries(this.pools),
+    //     hashes: Object.fromEntries(this.hashes),
+    //   };
+  
+    //   // Preserve original values except for "governor"
+    //   if (existingData.contracts?.governor && updatedData.contracts?.governor) {
+    //     existingData.contracts.governor = updatedData.contracts.governor;
+    //   }
+  
+    //   if (existingData.hashes?.governor && updatedData.hashes?.governor) {
+    //     existingData.hashes.governor = updatedData.hashes.governor;
+    //   }
+  
+    //   // Write back only modified values
+    //   writeFileSync(filePath, JSON.stringify(existingData, null, 2));
+    // } catch (error) {
+    //   console.error("Error writing to file:", error);
+    // }
   }
+  
 
   /**
    * Get the token for a given contractKey
@@ -167,5 +200,39 @@ export class AddressBook {
    */
   getPoolKeys(): string[] {
     return Array.from(this.pools.keys());
+  }
+
+  /**
+   * Set the hex encoded contractId for a given contractKey
+   * @param contractKey - The name of the contract
+   * @param contractId Hex encoded contractId
+   */
+  setContractId(contractKey: string, contractId: string) {
+    this.contracts.set(contractKey, contractId);
+  }
+
+  /**
+   * Get the hex encoded wasmHash for a given contractKey
+   * @param contractKey - The name of the contract
+   * @returns Hex encoded wasmHash
+   */
+  getWasmHash(contractKey: string) {
+    const washHash = this.hashes.get(contractKey);
+
+    if (washHash != undefined) {
+      return washHash;
+    } else {
+      console.error(`unable to find hash for ${contractKey} in ${this.fileName}`);
+      throw Error();
+    }
+  }
+
+  /**
+   * Set the hex encoded wasmHash for a given contractKey
+   * @param contractKey - The name of the contract
+   * @param wasmHash - Hex encoded wasmHash
+   */
+  setWasmHash(contractKey: string, wasmHash: string) {
+    this.hashes.set(contractKey, wasmHash);
   }
 }

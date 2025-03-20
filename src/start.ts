@@ -14,6 +14,7 @@ import handleGovernor from './cli/governorCli.js';
 import handleAdminVotes from './cli/adminVotesCli.js';
 import handleBondingVotes from './cli/bondingVotesCli.js';
 import handleTokenVotes from './cli/tokenVotesCli.js';
+import { deployRelatedContracts } from './contractDeploy.js';
 import { confirmAction, selectNetwork } from './utils/utils.js';
 
 async function handleOrbitActions(addressBook: AddressBook, txParams: TxParams) {
@@ -99,6 +100,7 @@ async function main() {
         message: 'Select an action:',
         choices: [
           'Initialize Orbit',
+          'Deploy Contracts (Governor, Dao-utils, Bridge-Oracle)',
           'Deploy Pool',
           'Orbit Actions',
           'Pool Actions',
@@ -118,6 +120,13 @@ async function main() {
         case 'Initialize Orbit': {
           if (await confirmAction('Initialize Orbit?', 'This will set up the core Orbit contracts')) {
             await initOrbit(addressBook, txParams);
+          }
+          break;
+        }
+        
+        case 'Deploy Contracts (Governor, Dao-utils, Bridge-Oracle)': {
+          if (await confirmAction('Deploy Contracts?', 'This will deploy Contracts ')) {
+            await deployRelatedContracts(addressBook, txParams);
           }
           break;
         }

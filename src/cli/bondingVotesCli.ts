@@ -30,7 +30,7 @@ async function handleBondingVotes(addressBook: AddressBook, txParams: TxParams) 
 
         type: 'list',
         name: 'action',
-        message: 'Select a governor action:',
+        message: 'Select a bonding votes action:',
         choices: [...bondingVoteOptions, 'Back'],
       },
     ]);
