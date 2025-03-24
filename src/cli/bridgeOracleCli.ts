@@ -9,7 +9,8 @@ async function handleBridgeOracle(addressBook: AddressBook, txParams: TxParams) 
     const oracleOptions = [
         // 'Initialize',
         'Add Asset',
-        'Set Oracle',
+        'Set Stellar Oracle',
+        'Set Other Oracle',
         'Get Decimals',
         'Get Last Price',
         'Upgrade'
@@ -56,12 +57,22 @@ async function handleBridgeOracle(addressBook: AddressBook, txParams: TxParams) 
                     break;
                 }
 
-                case 'Set Oracle': {
-                    const oracle = await selectToken(addressBook, 'Select new oracle address:');
+                case 'Set Stellar Oracle': {
+                    const oracle = await selectToken(addressBook, 'Select new stellar oracle address:');
 
-                    if (await confirmAction('Set Oracle?',
-                        `New Oracle: ${oracle}`)) {
-                        await bridgeOracleLogic.setOracle(contract, oracle, txParams);
+                    if (await confirmAction('Set Stellar Oracle?',
+                        `New Stellar Oracle: ${oracle}`)) {
+                        await bridgeOracleLogic.setStellarOracle(contract, oracle, txParams);
+                    }
+                    break;
+                }
+
+                case 'Set Other Oracle': {
+                    const oracle = await selectToken(addressBook, 'Select new other oracle address:');
+
+                    if (await confirmAction('Set Other Oracle?',
+                        `New Other Oracle: ${oracle}`)) {
+                        await bridgeOracleLogic.setOtherOracle(contract, oracle, txParams);
                     }
                     break;
                 }

@@ -29,13 +29,14 @@ export interface BridgeOracleAddAssetArgs {
 
 export class BridgeOracleContract extends Contract {
   static spec: ContractSpec = new ContractSpec([ 
-    "AAAAAAAAAHBJbml0aWFsaXplcyB0aGUgYnJpZGdlIG9yYWNsZQojIEFyZ3VtZW50cwoqIGBhZG1pbmAgLSBUaGUgYWRtaW4gYWRkcmVzcwoqIGBvcmFjbGVgIC0gVGhlIG9yYWNsZSBjb250cmFjdCBhZGRyZXNzAAAADV9fY29uc3RydWN0b3IAAAAAAAACAAAAAAAAAAVhZG1pbgAAAAAAABMAAAAAAAAABm9yYWNsZQAAAAAAEwAAAAA=",
+    "AAAAAAAAAMlJbml0aWFsaXplcyB0aGUgYnJpZGdlIG9yYWNsZQojIEFyZ3VtZW50cwoqIGBhZG1pbmAgLSBUaGUgYWRtaW4gYWRkcmVzcwoqIGBzdGVsbGFyX29yYWNsZWAgLSBUaGUgb3JhY2xlIGNvbnRyYWN0IGFkZHJlc3MgZm9yIHN0ZWxsYXIgYXNzZXQKKiBgb3RoZXJfb3JhY2xlYCAtIFRoZSBvcmFjbGUgY29udHJhY3QgYWRkcmVzcyBmb3Igb3RoZXIgYXNzZXQAAAAAAAANX19jb25zdHJ1Y3RvcgAAAAAAAAMAAAAAAAAABWFkbWluAAAAAAAAEwAAAAAAAAAOc3RlbGxhcl9vcmFjbGUAAAAAABMAAAAAAAAADG90aGVyX29yYWNsZQAAABMAAAAA",
     "AAAAAAAAAAAAAAAJYWRkX2Fzc2V0AAAAAAAAAgAAAAAAAAAFYXNzZXQAAAAAAAfQAAAABUFzc2V0AAAAAAAAAAAAAAJ0bwAAAAAH0AAAAAVBc3NldAAAAAAAAAA=",
-    "AAAAAAAAAAAAAAAKc2V0X29yYWNsZQAAAAAAAQAAAAAAAAAGb3JhY2xlAAAAAAATAAAAAA==",
+    "AAAAAAAAAAAAAAASc2V0X3N0ZWxsYXJfb3JhY2xlAAAAAAABAAAAAAAAAAZvcmFjbGUAAAAAABMAAAAA",
+    "AAAAAAAAAAAAAAAQc2V0X290aGVyX29yYWNsZQAAAAEAAAAAAAAABm9yYWNsZQAAAAAAEwAAAAA=",
     "AAAAAAAAAAAAAAAIZGVjaW1hbHMAAAAAAAAAAQAAAAQ=",
     "AAAAAAAAAAAAAAAJbGFzdHByaWNlAAAAAAAAAQAAAAAAAAAFYXNzZXQAAAAAAAfQAAAABUFzc2V0AAAAAAAAAQAAA+gAAAfQAAAACVByaWNlRGF0YQAAAA==",
     "AAAAAAAAAAAAAAAHdXBncmFkZQAAAAABAAAAAAAAAA1uZXdfd2FzbV9oYXNoAAAAAAAD7gAAACAAAAAA",
-    "AAAAAgAAAAAAAAAAAAAAE0JyaWRnZU9yYWNsZURhdGFLZXkAAAAAAwAAAAAAAAAAAAAABUFETUlOAAAAAAAAAAAAAAAAAAAGT1JBQ0xFAAAAAAABAAAAAAAAAAZCUklER0UAAAAAAAEAAAfQAAAABUFzc2V0AAAA",
+    "AAAAAgAAAAAAAAAAAAAAE0JyaWRnZU9yYWNsZURhdGFLZXkAAAAABAAAAAAAAAAAAAAABUFETUlOAAAAAAAAAAAAAAAAAAANU3RlbGxhck9yYWNsZQAAAAAAAAAAAAAAAAAAC090aGVyT3JhY2xlAAAAAAEAAAAAAAAABkJSSURHRQAAAAAAAQAAB9AAAAAFQXNzZXQAAAA=",
     "AAAAAQAAAC9QcmljZSBkYXRhIGZvciBhbiBhc3NldCBhdCBhIHNwZWNpZmljIHRpbWVzdGFtcAAAAAAAAAAACVByaWNlRGF0YQAAAAAAAAIAAAAAAAAABXByaWNlAAAAAAAACwAAAAAAAAAJdGltZXN0YW1wAAAAAAAABg==",
     "AAAAAgAAAApBc3NldCB0eXBlAAAAAAAAAAAABUFzc2V0AAAAAAAAAgAAAAEAAAAAAAAAB1N0ZWxsYXIAAAAAAQAAABMAAAABAAAAAAAAAAVPdGhlcgAAAAAAAAEAAAAR" 
   ]);
@@ -43,7 +44,8 @@ export class BridgeOracleContract extends Contract {
   static readonly parsers = {
     // initialize: () => { },
     addAsset: () => { },
-    setOracle: () => { },
+    setStellarOracle: () => { },
+    setOtherOracle:() => { },
     decimals: (result: string): u32 =>
       BridgeOracleContract.spec.funcResToNative('decimals', result),
     lastPrice: (result: string): Option<PriceData> =>
@@ -65,10 +67,17 @@ export class BridgeOracleContract extends Contract {
     ).toXDR('base64');
   }
 
-  setOracle(oracle: Address | string): string {
+  setStellarOracle(oracle: Address | string): string {
     return this.call(
-      'set_oracle',
-      ...BridgeOracleContract.spec.funcArgsToScVals('set_oracle', { oracle })
+      'set_stellar_oracle',
+      ...BridgeOracleContract.spec.funcArgsToScVals('set_stellar_oracle', { oracle })
+    ).toXDR('base64');
+  }
+
+  setOtherOracle(oracle: Address | string): string {
+    return this.call(
+      'set_other_oracle',
+      ...BridgeOracleContract.spec.funcArgsToScVals('set_other_oracle', { oracle })
     ).toXDR('base64');
   }
 

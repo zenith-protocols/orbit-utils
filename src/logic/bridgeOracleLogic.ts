@@ -50,22 +50,42 @@ export async function addAsset(
     }
 }
 
-export async function setOracle(
+export async function setStellarOracle(
     contract: string,
     oracle: string,
     txParams: TxParams
 ) {
-    console.log('Setting oracle...');
+    console.log('Setting stellar oracle...');
     const bridgeOracle = new BridgeOracleContract(contract);
     try {
         await invokeSorobanOperation(
-            bridgeOracle.setOracle(Address.fromString(oracle)),
-            BridgeOracleContract.parsers.setOracle,
+            bridgeOracle.setStellarOracle(Address.fromString(oracle)),
+            BridgeOracleContract.parsers.setStellarOracle,
             txParams
         );
-        console.log(`Successfully set oracle.\n`);
+        console.log(`Successfully set stellar oracle.\n`);
     } catch (e) {
-        console.log('Failed to set oracle', e);
+        console.log('Failed to set stellar oracle', e);
+        throw e;
+    }
+}
+
+export async function setOtherOracle(
+    contract: string,
+    oracle: string,
+    txParams: TxParams
+) {
+    console.log('Setting other oracle...');
+    const bridgeOracle = new BridgeOracleContract(contract);
+    try {
+        await invokeSorobanOperation(
+            bridgeOracle.setOtherOracle(Address.fromString(oracle)),
+            BridgeOracleContract.parsers.setOtherOracle,
+            txParams
+        );
+        console.log(`Successfully set other oracle.\n`);
+    } catch (e) {
+        console.log('Failed to set other oracle', e);
         throw e;
     }
 }
