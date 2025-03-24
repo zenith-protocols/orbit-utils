@@ -103,7 +103,7 @@ export async function decreaseSupply(
 export async function claimInterest(
     contract: string,
     pool: string,
-    reserve_tokens_id: Array<number>,
+    reserve_address: string,
     to: string,
     txParams: TxParams
 ) {
@@ -113,7 +113,7 @@ export async function claimInterest(
         await invokeSorobanOperation(
             treasury.claimInterest({
                 pool,
-                reserve_tokens_id,
+                reserve_address,
                 to
             }),
             TreasuryContract.parsers.claimInterest,

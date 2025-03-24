@@ -87,7 +87,7 @@ async function handleTreasury(addressBook: AddressBook, txParams: TxParams) {
                 }
 
                 case 'Claim Interest': {
-                    const { pool, reserve_tokens_id, to } = await inquirer.prompt([
+                    const { pool, reserve_address, to } = await inquirer.prompt([
                         {
                             type: 'input',
                             name: 'pool',
@@ -96,9 +96,9 @@ async function handleTreasury(addressBook: AddressBook, txParams: TxParams) {
                         },
                         {
                             type: 'input',
-                            name: 'reserve_tokens_id',
-                            message: 'Enter Reserve Tokens ID (comma-separated):',
-                            filter: (input: string) => input.split(',').map((b: string) => b.trim()).filter((b: string) => b !== '').map((c: string) => parseInt(c)) // Convert to array
+                            name: 'reserve_address',
+                            message: 'Enter Reserve address:',
+                            validate: (input: string) => input.trim() !== '' || 'Reserve address cannot be empty'
                         },
                         {
                             type: 'input',
@@ -109,8 +109,8 @@ async function handleTreasury(addressBook: AddressBook, txParams: TxParams) {
                     ]);
 
                     if (await confirmAction('Claim Interest?',
-                        `Pool: ${pool}\nReserve Tokens ID: ${reserve_tokens_id.toString()}\nTo: ${to}`)) {
-                        await treasuryLogic.claimInterest(contract, pool, reserve_tokens_id, to, txParams);
+                        `Pool: ${pool}\nReserve Address: ${reserve_address}\nTo: ${to}`)) {
+                        await treasuryLogic.claimInterest(contract, pool, reserve_address, to, txParams);
                     }
                     break;
                 }
