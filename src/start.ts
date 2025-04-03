@@ -100,7 +100,7 @@ async function main() {
         message: 'Select an action:',
         choices: [
           'Initialize Orbit',
-          'Deploy Contracts (Governor, Dao-utils, Bridge-Oracle)',
+          'Deploy Related Contracts',
           'Deploy Pool',
           'Orbit Actions',
           'Pool Actions',
@@ -124,7 +124,7 @@ async function main() {
           break;
         }
         
-        case 'Deploy Contracts (Governor, Dao-utils, Bridge-Oracle)': {
+        case 'Deploy Related Contracts': {
           if (await confirmAction('Deploy Contracts?', 'This will deploy Contracts ')) {
             await deployRelatedContracts(addressBook, txParams);
           }
@@ -155,7 +155,7 @@ async function main() {
 
           if (await confirmAction('Deploy Pool?',
             `Name: ${name}\nBackstop Take Rate: ${backstopTakeRate}\nMax Positions: ${maxPositions}`)) {
-            await deployPool(addressBook, name, backstopTakeRate, maxPositions, txParams);
+            await deployPool(addressBook, name, backstopTakeRate, maxPositions, 0n, txParams);
           }
           break;
         }

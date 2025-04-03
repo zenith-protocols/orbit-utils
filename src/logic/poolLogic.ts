@@ -1,8 +1,8 @@
-import { BackstopContractV2, PoolContractV2, AuctionType } from "@blend-capital/blend-sdk";
-import { Address } from "@stellar/stellar-sdk";
+import { BackstopContractV2, PoolContractV2, AuctionType, UpdatePoolV2Args } from "@blend-capital/blend-sdk";
+import { Address, contract } from "@stellar/stellar-sdk";
 import { AddressBook } from "../utils/address-book.js";
 import { invokeSorobanOperation, TxParams } from "../utils/tx.js";
-import { ReserveConfig, ReserveEmissionMetadata, ReserveEmissionData } from "@blend-capital/blend-sdk";
+import { ReserveConfig, ReserveConfigV2, ReserveEmissionMetadata, i128 } from "@blend-capital/blend-sdk";
 import { Request } from "@blend-capital/blend-sdk";
 import { config } from "../utils/env_config.js";
 import { SCALAR_7 } from "../utils/utils.js";
@@ -23,14 +23,15 @@ export async function setPoolAdmin(contract: string, newAdmin: string, txParams:
   }
 }
 
-export async function updatePool(contract: string, backstopTakeRate: number, maxPositions: number, txParams: TxParams) {
+export async function updatePool(contract: string, backstopTakeRate: number, maxPositions: number, minCollateral: i128, txParams: TxParams) {
   console.log('Updating pool...');
   const pool = new PoolContractV2(contract);
   try {
     await invokeSorobanOperation(
       pool.updatePool({
         backstop_take_rate: backstopTakeRate * SCALAR_7,
-        max_positions: maxPositions
+        max_positions: maxPositions,
+        min_collateral: minCollateral
       }),
       PoolContractV2.parsers.updatePool,
       txParams
@@ -42,9 +43,9 @@ export async function updatePool(contract: string, backstopTakeRate: number, max
   }
 }
 
-export async function queueSetReserve(contract: string, asset: string, metadata: ReserveConfig, txParams: TxParams) {
+export async function queueSetReserve(contract: string, asset: string, metadata: ReserveConfigV2, txParams: TxParams) {
   console.log('Queueing set reserve...');
-  const scaledReserveConfig = {
+  const scaledReserveConfig : ReserveConfigV2 = {
     index: metadata.index,
     decimals: metadata.decimals,
     c_factor: metadata.c_factor * SCALAR_7,
@@ -56,6 +57,8 @@ export async function queueSetReserve(contract: string, asset: string, metadata:
     r_two: metadata.r_two * SCALAR_7,
     r_three: metadata.r_three * SCALAR_7,
     reactivity: metadata.reactivity * SCALAR_7,
+    supply_cap: metadata.supply_cap,
+    enabled: metadata.enabled
   }
   console.log(scaledReserveConfig);
   const pool = new PoolContractV2(contract);
@@ -399,21 +402,21 @@ export async function getUserEmissions(contract: string, user: string, reserve_t
 
 export async function getMarket(contract: string, txParams: TxParams) {
   console.log('Getting Market to pool...');
-  const poolContract = new PoolContractV2(contract);
-  try {
-    const result = await invokeSorobanOperation(
-      poolContract.getMarket(),
-      PoolContractV2.parsers.getMarket,
-      txParams
-    );
-    console.log(`Successfully got market: ${result}\n`);
-    if (result === undefined) {
-      throw new Error('Failed to get market: result is undefined');
-    }
-    return result;
-  } catch (e) {
-    console.log('Failed to get market', e);
-  }
+  // const poolContract = new PoolContractV2(contract);
+  // try {
+  //   const result = await invokeSorobanOperation(
+  //     poolContract.getMarket(),
+  //     PoolContractV2.parsers.getMarket,
+  //     txParams
+  //   );
+  //   console.log(`Successfully got market: ${result}\n`);
+  //   if (result === undefined) {
+  //     throw new Error('Failed to get market: result is undefined');
+  //   }
+  //   return result;
+  // } catch (e) {
+  //   console.log('Failed to get market', e);
+  // }
 }
 // # This function was not declared in PoolContractV2
 // export async function newLiquidationAuction(contract: string, user: string, percentLiquidated: number, txParams: TxParams) {

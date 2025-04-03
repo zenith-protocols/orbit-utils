@@ -100,10 +100,10 @@ export class TreasuryContract extends Contract {
   }
 
 
-  setPegkeeper(pegkeeper: Address | String): string {
+  setPegkeeper(new_pegkeeper: Address | String): string {
     return this.call(
       'set_pegkeeper',
-      ...TreasuryContract.spec.funcArgsToScVals('set_pegkeeper', { pegkeeper })
+      ...TreasuryContract.spec.funcArgsToScVals('set_pegkeeper', { new_pegkeeper })
     ).toXDR('base64');
   }
 

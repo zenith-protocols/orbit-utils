@@ -39,25 +39,31 @@ export async function deployRelatedContracts(addressBook: AddressBook, txParamsA
   // console.log(addressBook.getContract('bondingVotes'));
   // console.log(addressBook.getContract('adminVotes'));
 
-  await deploy(addressBook, 'governor', txParamsAdmin);
+  // await deploy(addressBook, 'governor', txParamsAdmin);
   
-  await deploy(addressBook, 'bondingVotes', txParamsAdmin);
+  // await deploy(addressBook, 'bondingVotes', txParamsAdmin);
 
   await deploy(addressBook, 'dao', txParamsAdmin);
 
   const bridgeOracleConstructorArgs: xdr.ScVal[] = [
     nativeToScVal(txParamsAdmin.account.accountId(), { type: 'address' }),
+    nativeToScVal(addressBook.getContract('oracle'), { type: 'address' }),
     nativeToScVal(addressBook.getContract('oracle'), { type: 'address' })
   ]
   await deploy(addressBook, 'bridgeOracle', txParamsAdmin, bridgeOracleConstructorArgs);
 
-  // const treasuryConstructorArgs: xdr.ScVal[] = [
-  //   nativeToScVal(addressBook.getContract('dao'), { type: 'address' }),
-  //   nativeToScVal(addressBook.getContract('poolFactory'), { type: 'address' }),
-  //   nativeToScVal(addressBook.getContract('pegkeeper'), { type: 'address' }),
-  // ]
-  // await deploy(addressBook, 'treasury', txParamsAdmin, treasuryConstructorArgs);
+  const treasuryConstructorArgs: xdr.ScVal[] = [
+    nativeToScVal(addressBook.getContract('governor'), { type: 'address' }),
+    nativeToScVal(addressBook.getContract('poolFactory'), { type: 'address' }),
+    nativeToScVal(addressBook.getContract('pegkeeper'), { type: 'address' }),
+  ]
+  await deploy(addressBook, 'treasury', txParamsAdmin, treasuryConstructorArgs);
 
+  const pegkeeperConstructorArgs: xdr.ScVal[] = [
+    nativeToScVal(addressBook.getContract('treasury'), { type: 'address' }),
+    nativeToScVal(addressBook.getContract('router'), { type: 'address' }),
+  ]
+  await deploy(addressBook, 'pegkeeper', txParamsAdmin, pegkeeperConstructorArgs);
 
 }
 

@@ -2,10 +2,10 @@ import inquirer from 'inquirer';
 import { AddressBook } from '../utils/address-book.js';
 import * as poolLogic from '../logic/poolLogic.js';
 import { TxParams } from '../utils/tx.js';
-import { ReserveConfig, ReserveEmissionMetadata, Request, RequestType, AuctionType, PoolContract } from '@blend-capital/blend-sdk';
+import { ReserveConfigV2, ReserveEmissionMetadata, Request, RequestType, AuctionType, PoolContract } from '@blend-capital/blend-sdk';
 import { confirmAction, selectToken } from '../utils/utils.js';
 
-const RESERVE_CONFIGS: Record<string, ReserveConfig> = {
+const RESERVE_CONFIGS: Record<string, ReserveConfigV2> = {
   'Stable (Lending Factor: 100%)': {
     index: 1,
     decimals: 7,
@@ -18,6 +18,8 @@ const RESERVE_CONFIGS: Record<string, ReserveConfig> = {
     r_two: 0.05,
     r_three: 0.05,
     reactivity: 0.0000004,
+    supply_cap: 10000000000000000000000n,
+    enabled: false
   },
   'Collateral (Collateral Factor: 75%)': {
     index: 0,
@@ -31,6 +33,8 @@ const RESERVE_CONFIGS: Record<string, ReserveConfig> = {
     r_two: 0,
     r_three: 0,
     reactivity: 0,
+    supply_cap: 10000000000000000000000n,
+    enabled: false
   }
 };
 
@@ -173,7 +177,7 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
         }
 
         case 'Update Pool': {
-          const { backstopTakeRate, maxPositions } = await inquirer.prompt([
+          const { backstopTakeRate, maxPositions, minCollateral } = await inquirer.prompt([
             {
               type: 'number',
               name: 'backstopTakeRate',
@@ -191,12 +195,18 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
               validate: (input) =>
                 (!isNaN(input) && input > 0) ||
                 'Please enter a positive number'
+            },
+            {
+              type: 'string', name: 'minCollateral', message: 'Enter min collateral:', validate: (input: string) => {
+                if (!/^\d+$/.test(input)) return 'Please enter a valid integer';
+                return true;
+              }
             }
           ]);
 
           if (await confirmAction('Update Pool?',
             `Pool: ${selectedPool}\nBackstop Take Rate: ${backstopTakeRate}\nMax Positions: ${maxPositions}`)) {
-            await poolLogic.updatePool(selectedPool, backstopTakeRate, maxPositions, txParams);
+            await poolLogic.updatePool(selectedPool, backstopTakeRate, maxPositions, BigInt(minCollateral), txParams);
           }
           break;
         }
