@@ -43,6 +43,22 @@ export async function updatePool(contract: string, backstopTakeRate: number, max
   }
 }
 
+export async function deleteQueuedReserve(contract: string, asset: string, txParams: TxParams) {
+  console.log('Deleting queued reserve...');
+  const pool = new PoolContractV2(contract);
+  try {
+    await invokeSorobanOperation(
+      pool.cancelSetReserve(asset),
+      PoolContractV2.parsers.cancelSetReserve,
+      txParams
+    );
+    console.log(`Successfully deleted queued reserve for ${asset}.\n`);
+  } catch (e) {
+    console.log('Failed to delete queued reserve', e);
+    throw e;
+  }
+}
+
 export async function queueSetReserve(contract: string, asset: string, metadata: ReserveConfigV2, txParams: TxParams) {
   console.log('Queueing set reserve...');
   const scaledReserveConfig : ReserveConfigV2 = {

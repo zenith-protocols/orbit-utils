@@ -127,7 +127,8 @@ export async function lastPrice(
             txParams
         );
         if (priceData) {
-            console.log(`Successfully got last price: ${priceData.price} at timestamp ${priceData.timestamp}\n`);
+            console.log(`->------------->--`, priceData);
+            // console.log(`Successfully got last price: ${priceData.price} at timestamp ${priceData.timestamp}\n`);
         } else {
             console.log('No price data available\n');
         }

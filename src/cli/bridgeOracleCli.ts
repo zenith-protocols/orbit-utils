@@ -58,7 +58,14 @@ async function handleBridgeOracle(addressBook: AddressBook, txParams: TxParams) 
                 }
 
                 case 'Set Stellar Oracle': {
-                    const oracle = await selectToken(addressBook, 'Select new stellar oracle address:');
+                    const { oracle } = await inquirer.prompt([
+                        {
+                            type: 'input',
+                            name: 'oracle',
+                            message: 'Enter oracle address:',
+                            validate: (input: string) => input.trim() !== '' || 'oracle address cannot be empty'
+                        }
+                    ]);
 
                     if (await confirmAction('Set Stellar Oracle?',
                         `New Stellar Oracle: ${oracle}`)) {
@@ -68,7 +75,14 @@ async function handleBridgeOracle(addressBook: AddressBook, txParams: TxParams) 
                 }
 
                 case 'Set Other Oracle': {
-                    const oracle = await selectToken(addressBook, 'Select new other oracle address:');
+                    const { oracle } = await inquirer.prompt([
+                        {
+                            type: 'input',
+                            name: 'oracle',
+                            message: 'Enter oracle address:',
+                            validate: (input: string) => input.trim() !== '' || 'oracle address cannot be empty'
+                        }
+                    ]);
 
                     if (await confirmAction('Set Other Oracle?',
                         `New Other Oracle: ${oracle}`)) {
