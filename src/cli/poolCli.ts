@@ -2,10 +2,10 @@ import inquirer from 'inquirer';
 import { AddressBook } from '../utils/address-book.js';
 import * as poolLogic from '../logic/poolLogic.js';
 import { TxParams } from '../utils/tx.js';
-import { ReserveConfig, ReserveEmissionMetadata } from '@blend-capital/blend-sdk';
+import { ReserveConfigV2, ReserveEmissionMetadata, Request, RequestType, AuctionType, PoolContract } from '@blend-capital/blend-sdk';
 import { confirmAction, selectToken } from '../utils/utils.js';
 
-const RESERVE_CONFIGS: Record<string, ReserveConfig> = {
+const RESERVE_CONFIGS: Record<string, ReserveConfigV2> = {
   'Stable (Lending Factor: 100%)': {
     index: 1,
     decimals: 7,
@@ -18,6 +18,8 @@ const RESERVE_CONFIGS: Record<string, ReserveConfig> = {
     r_two: 0.05,
     r_three: 0.05,
     reactivity: 0.0000004,
+    supply_cap: 10000000000000000000000n,
+    enabled: false
   },
   'Collateral (Collateral Factor: 75%)': {
     index: 0,
@@ -31,6 +33,8 @@ const RESERVE_CONFIGS: Record<string, ReserveConfig> = {
     r_two: 0,
     r_three: 0,
     reactivity: 0,
+    supply_cap: 10000000000000000000000n,
+    enabled: false
   }
 };
 
@@ -78,11 +82,23 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
     'Gulp Emissions',
     'Set Emissions Config',
     'Claim',
-    'New Liquidation Auction',
-    'New Bad Debt Auction',
-    'New Interest Auction',
+    // 'New Liquidation Auction',
+    // 'New Bad Debt Auction',
+    // 'New Interest Auction',
+    'Submit To Pool',
+    'Submit With Allowance',
+    'Flash Loan',
+    'Gulp',
+    'New Auction',
+    'Get Config',
+    'Get Admin',
+    'Get Reserve',
+    'Get Reserve Emissions',
+    'Get User Emissions',
+    'Get Market',
     'Backstop Deposit',
-    'Add Pool to Reward Zone'
+    'Add Pool to Reward Zone',
+    'Remove Pool from Reward Zone'
   ];
 
   while (true) {
@@ -96,6 +112,51 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
     ]);
 
     if (action === 'Back') break;
+
+    async function getRequestInput() {
+      const requests: Request[] = [];
+
+      const requestTypeChoices = Object.keys(RequestType)
+        .filter(key => isNaN(Number(key))) // Ignore numeric keys
+        .map(key => ({ name: key, value: RequestType[key as keyof typeof RequestType] }));
+
+      async function addRequest() {
+        const request = await inquirer.prompt([
+          {
+            type: 'list',
+            name: 'request_type',
+            message: 'Select a request type',
+            choices: requestTypeChoices
+          },
+          {
+            type: 'input',
+            name: 'address',
+            message: 'Enter request address'
+          },
+          {
+            type: 'input',
+            name: 'amount',
+            message: 'Enter request amount'
+          }
+        ]);
+
+        requests.push(request);
+
+        const { addMore } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'addMore',
+            message: 'Do you want to add another request?',
+            default: true
+          }
+        ]);
+
+        if (addMore) await addRequest();
+      }
+
+      await addRequest();
+      return requests;
+    }
 
     try {
       const selectedPool = await selectPool(addressBook);
@@ -116,7 +177,7 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
         }
 
         case 'Update Pool': {
-          const { backstopTakeRate, maxPositions } = await inquirer.prompt([
+          const { backstopTakeRate, maxPositions, minCollateral } = await inquirer.prompt([
             {
               type: 'number',
               name: 'backstopTakeRate',
@@ -134,12 +195,18 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
               validate: (input) =>
                 (!isNaN(input) && input > 0) ||
                 'Please enter a positive number'
+            },
+            {
+              type: 'string', name: 'minCollateral', message: 'Enter min collateral:', validate: (input: string) => {
+                if (!/^\d+$/.test(input)) return 'Please enter a valid integer';
+                return true;
+              }
             }
           ]);
 
           if (await confirmAction('Update Pool?',
             `Pool: ${selectedPool}\nBackstop Take Rate: ${backstopTakeRate}\nMax Positions: ${maxPositions}`)) {
-            await poolLogic.updatePool(selectedPool, backstopTakeRate, maxPositions, txParams);
+            await poolLogic.updatePool(selectedPool, backstopTakeRate, maxPositions, BigInt(minCollateral), txParams);
           }
           break;
         }
@@ -263,13 +330,200 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
           break;
         }
 
-        case 'New Liquidation Auction': {
-          const { user, percent } = await inquirer.prompt([
+        // case 'New Liquidation Auction': {
+        //   const { user, percent } = await inquirer.prompt([
+        //     {
+        //       type: 'input',
+        //       name: 'user',
+        //       message: 'Enter user address:',
+        //       validate: (input) => input.trim() !== '' || 'User address cannot be empty'
+        //     },
+        //     {
+        //       type: 'number',
+        //       name: 'percent',
+        //       message: 'Enter liquidation percentage (0-100):',
+        //       validate: (input) =>
+        //         (!isNaN(input) && input >= 0 && input <= 100) ||
+        //         'Please enter a valid percentage between 0 and 100'
+        //     }
+        //   ]);
+
+        //   if (await confirmAction('Create Liquidation Auction?',
+        //     `Pool: ${selectedPool}\nUser: ${user}\nPercentage: ${percent}%`)) {
+        //     await poolLogic.newLiquidationAuction(selectedPool, user, percent, txParams);
+        //   }
+        //   break;
+        // }
+
+        // case 'New Bad Debt Auction': {
+        //   if (await confirmAction('Create Bad Debt Auction?', `Pool: ${selectedPool}`)) {
+        //     await poolLogic.newBadDebtAuction(selectedPool, txParams);
+        //   }
+        //   break;
+        // }
+
+        // case 'New Interest Auction': {
+        //   const { assetCount } = await inquirer.prompt([{
+        //     type: 'number',
+        //     name: 'assetCount',
+        //     message: 'How many assets to include?',
+        //     validate: (input) =>
+        //       (!isNaN(input) && input > 0) ||
+        //       'Please enter a positive number'
+        //   }]);
+
+        //   const assets: string[] = [];
+        //   for (let i = 0; i < assetCount; i++) {
+        //     const asset = await selectToken(addressBook, `Select asset ${i + 1}:`);
+        //     assets.push(asset);
+        //   }
+
+        //   if (await confirmAction('Create Interest Auction?',
+        //     `Pool: ${selectedPool}\nAssets:\n${assets.join('\n')}`)) {
+        //     await poolLogic.newInterestAuction(selectedPool, assets, txParams);
+        //   }
+        //   break;
+        // }
+
+        case 'Submit To Pool': {
+          const { from, spender, to } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'from',
+              message: 'Enter from address:',
+              validate: (input) => input.trim() !== '' || 'From address cannot be empty'
+            },
+            {
+              type: 'number',
+              name: 'spender',
+              message: 'Enter spender address:',
+              validate: (input) => input.trim() !== '' || 'Spender address cannot be empty'
+            },
+            {
+              type: 'input',
+              name: 'to',
+              message: 'Enter to address:',
+              validate: (input) => input.trim() !== '' || 'To address cannot be empty'
+            }
+          ]);
+
+          const requests = await getRequestInput();
+
+          if (await confirmAction('Submit to pool?',
+            `Pool: ${selectedPool}\nFrom: ${from}\nSpender: ${spender}\nTo: ${to}\nRequests: ${requests}`)) {
+            await poolLogic.submitToPool(selectedPool, from, spender, to, requests, txParams);
+          }
+          break;
+        }
+
+        case 'Submit With Allowance': {
+          const { from, spender, to } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'from',
+              message: 'Enter from address:',
+              validate: (input) => input.trim() !== '' || 'From address cannot be empty'
+            },
+            {
+              type: 'number',
+              name: 'spender',
+              message: 'Enter spender address:',
+              validate: (input) => input.trim() !== '' || 'Spender address cannot be empty'
+            },
+            {
+              type: 'input',
+              name: 'to',
+              message: 'Enter to address:',
+              validate: (input) => input.trim() !== '' || 'To address cannot be empty'
+            }
+          ]);
+
+          const requests = await getRequestInput();
+
+          if (await confirmAction('Submit with allowance?',
+            `Pool: ${selectedPool}\nFrom: ${from}\nSpender: ${spender}\nTo: ${to}\nRequests: ${requests}`)) {
+            await poolLogic.submitWithAllowance(selectedPool, from, spender, to, requests, txParams);
+          }
+          break;
+        }
+
+        case 'Flash Loan': {
+          const { from, asset, amount } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'from',
+              message: 'Enter from address:',
+              validate: (input) => input.trim() !== '' || 'From address cannot be empty'
+            },
+            {
+              type: 'number',
+              name: 'asset',
+              message: 'Enter asset address:',
+              validate: (input) => input.trim() !== '' || 'Asset address cannot be empty'
+            },
+            {
+              type: 'string', name: 'amount', message: 'Enter amount:', validate: (input: string) => {
+                if (!/^\d+$/.test(input)) return 'Please enter a valid integer';
+                return true;
+              }
+            }
+          ]);
+
+
+          if (await confirmAction('Flash loan?',
+            `Pool: ${selectedPool}\nFrom: ${from}\nSpender: ${asset}\nTo: ${BigInt(amount)}`)) {
+            await poolLogic.flashLoan(selectedPool, from, asset, BigInt(amount), txParams);
+          }
+          break;
+        }
+
+        case 'Gulp': {
+          const { asset } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'asset',
+              message: 'Enter asset address:',
+              validate: (input) => input.trim() !== '' || 'Asset address cannot be empty'
+            }
+          ]);
+
+
+          if (await confirmAction('Do you want to guilp?',
+            `Pool: ${selectedPool}\nAsset: ${asset}`)) {
+            await poolLogic.gulp(selectedPool, asset, txParams);
+          }
+          break;
+        }
+
+        case 'New Auction': {
+          const { auction_type, user, bid, lot, percent } = await inquirer.prompt([
+            {
+              type: 'list',
+              name: 'auction_type',
+              message: 'Select a auction type',
+              choices: [
+                { name: 'Liquidation', value: AuctionType['Liquidation'] },
+                { name: 'BadDebt', value: AuctionType['BadDebt'] },
+                { name: 'Interest', value: AuctionType['BadDebt'] }
+              ]
+            },
             {
               type: 'input',
               name: 'user',
               message: 'Enter user address:',
               validate: (input) => input.trim() !== '' || 'User address cannot be empty'
+            },
+            {
+              type: 'input',
+              name: 'bid',
+              message: 'Enter bids (comma-separated):',
+              filter: (input) => input.split(',').map((b: string) => b.trim()).filter((b: string) => b !== '') // Convert to array
+            },
+            {
+              type: 'input',
+              name: 'lot',
+              message: 'Enter lots (comma-separated):',
+              filter: (input) => input.split(',').map((b: string) => b.trim()).filter((b: string) => b !== '') // Convert to array
             },
             {
               type: 'number',
@@ -281,39 +535,70 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
             }
           ]);
 
-          if (await confirmAction('Create Liquidation Auction?',
-            `Pool: ${selectedPool}\nUser: ${user}\nPercentage: ${percent}%`)) {
-            await poolLogic.newLiquidationAuction(selectedPool, user, percent, txParams);
+          if (await confirmAction('Create Auction?',
+            `Pool: ${selectedPool}\nAuctionType: ${auction_type}\nUser: ${user}\nPercentage: ${percent}%`)) {
+            await poolLogic.newAuction(selectedPool, auction_type, user, bid, lot, percent, txParams);
           }
           break;
         }
 
-        case 'New Bad Debt Auction': {
-          if (await confirmAction('Create Bad Debt Auction?', `Pool: ${selectedPool}`)) {
-            await poolLogic.newBadDebtAuction(selectedPool, txParams);
+        case 'Get Config': {
+          if (await confirmAction('Get Config?', '')) {
+            const config = await poolLogic.getConfig(selectedPool, txParams);
           }
           break;
         }
 
-        case 'New Interest Auction': {
-          const { assetCount } = await inquirer.prompt([{
-            type: 'number',
-            name: 'assetCount',
-            message: 'How many assets to include?',
-            validate: (input) =>
-              (!isNaN(input) && input > 0) ||
-              'Please enter a positive number'
-          }]);
-
-          const assets: string[] = [];
-          for (let i = 0; i < assetCount; i++) {
-            const asset = await selectToken(addressBook, `Select asset ${i + 1}:`);
-            assets.push(asset);
+        case 'Get Admin': {
+          if (await confirmAction('Get Admin?', '')) {
+            const result = await poolLogic.getAdmin(selectedPool, txParams);
           }
+          break;
+        }
 
-          if (await confirmAction('Create Interest Auction?',
-            `Pool: ${selectedPool}\nAssets:\n${assets.join('\n')}`)) {
-            await poolLogic.newInterestAuction(selectedPool, assets, txParams);
+        case 'Get Reserve': {
+          const { asset } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'asset',
+              message: 'Enter asset address',
+            }
+          ]);
+          if (await confirmAction('Get Reserve?', '')) {
+            const result = await poolLogic.getReserve(selectedPool, asset, txParams);
+          }
+          break;
+        }
+
+        case 'Get Reserve Emissions': {
+          const { reserve_token_id } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'reserve_token_id',
+              message: 'Enter reserve token id',
+            }
+          ]);
+          if (await confirmAction('Get Reserve Emissions?', '')) {
+            const result = await poolLogic.getReserveEmissions(selectedPool, reserve_token_id, txParams);
+          }
+          break;
+        }
+
+        case 'Get User Emissions': {
+          const { user, reserve_token_id } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'user',
+              message: 'Enter user address',
+            },
+            {
+              type: 'input',
+              name: 'reserve_token_id',
+              message: 'Enter reserve token id'
+            }
+          ]);
+          if (await confirmAction('Get Reserve Emissions?', '')) {
+            const result = await poolLogic.getUserEmissions(selectedPool, user, reserve_token_id, txParams);
           }
           break;
         }
@@ -335,6 +620,13 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
           break;
         }
 
+        case 'Get Market': {
+          if (await confirmAction('Get Market?', '')) {
+            const result = await poolLogic.getMarket(selectedPool, txParams);
+          }
+          break;
+        }
+
         case 'Add Pool to Reward Zone': {
           const { removePool } = await inquirer.prompt([{
             type: 'input',
@@ -344,8 +636,16 @@ async function handlePool(addressBook: AddressBook, txParams: TxParams) {
           }]);
 
           if (await confirmAction('Add Pool to Reward Zone?',
-            `Pool to Add: ${selectedPool}\nPool to Remove: ${removePool || 'None'}`)) {
+            `Pool to Add: ${selectedPool}\nPool to Remove: ${removePool || undefined}`)) {
             await poolLogic.addPoolToRewardZone(addressBook.getContract("backstop"), selectedPool, removePool, txParams);
+          }
+          break;
+        }
+
+        case 'Remove Pool from Reward Zone': {
+          if (await confirmAction('Add Pool to Reward Zone?',
+            `Pool to Add: ${selectedPool}`)) {
+            await poolLogic.removePoolfromRewardZone(addressBook.getContract("backstop"), selectedPool, txParams);
           }
           break;
         }
